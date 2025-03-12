@@ -1,0 +1,41 @@
+Crea una pagina web responsive para mobile, que es para una empresa que vende sorrentinos congelados y otros productos, que tendra 2 partes, una pagina publica principal que sea la presentacion de la empresa que tendra lo siguiente:
+Pagina Main: Pantalla principal donde se presentara la intencion del negocio, en la cual se le permitira el cliente o posible cliente llegar a todos los rincones de nuestra pagina web
+Pagina Nosotros: Explicacion de quien es Le Unique, lo que hace, hace cuanto lo hace, como, beneficios de comprar o consumir y resultados.
+Pagina Imagenes: Imagenes de descripcion de lo que hacen, los productos y la variedad.
+Pagina Contactanos: Numero de telefono del chatbot, espacio para que pongan su numero de telefono, nombre, apellido y mail para que queden dentro de la lista de difusión de flayers y mensajes.
+Tendra en todas las paginas el globo de whatsapp para redireccionar a la persona al numero del chatbot de Le Unike
+Crea toda la informacion necesaria y usa las imagenes que necesites.
+Agrega quita o modifica todo lo que vea necesario para que quede completa y profecional
+
+La segunda parte de la pagina sera una pagina interna de la empresa que tendra un login.
+inicialmente debe estar dado de alta un usuario que sea user/pass Admin/Admin. Este usuario sera el SUPERADMINISTRADOR.
+El SUPERADMINISTRADOR puede crear, modificar y borrar los usuarios y contraseñas de los otros dos usuarios que son administradores y vendedores pudiendo limitar lo que hace cada uno.
+Las secciones que apareceran en el sidebar y los accesos que tendra cada usuario son los siguientes:
+
+Dashboard: actividades de la empresa y qr de whatsapp.  solo para administradores. los vendedores no lo ven por que no tienen permisos.
+
+Productos: productos de la empresa. vendedor puede ver lo que hay pero no modifica y el administrador puede crear, modificar, eliminar o inhabilitar productos.
+
+vendedores: se vera los vendedores disponibles. los vendedores no podras acceder ni ver nada. Los administradores podran ver todos los vendedores de la empresa, agregar mas, quitarlos, modificarlos o inhabilitarlos.
+
+Clientes: cada vendedor puede agregar clientes y sera asignado al vendedor que lo cargo y solo puede ver sis vendedores asignados. si entro como administrador puedo ver todos los clientes de la empresa incluido los que no tienen vendedores asignados.
+
+Chats: Cada vendor vera el chat con sus clientes asociados. no podra ver el chat de otros clientes.
+Los administradores pueden ver todos los chats de todos los clientes
+
+Pedidos: Cada vendedor puede dar de alta un pedido a su nombre y para un cliente especifico. no podra ver los pedidos que crearon otros vendedores.
+el administrador puede ver todos los pedidos de todos los clientes de la empresa.
+
+Metricas: solo puede acceder el administrador y podra ver las ventas realizadas y metricas de la empresa como ganancias por semana y mas.
+
+
+Crea informacion inicial para que la pagina este cargada.
+Agrega, quita o modifica imagenes si lo ves necesario.
+Usa la siguiente paleta de colores #e3a765, #fdd000, #f2efe2, #5d6d7c y #000000
+Usa animaciones y dale vida a la pagina para que sea profesional y completa
+
+utiliza el logo de la empresa que te envio
+
+Se debe integrar con la api que ya esta funcionando, se adjunta el swagger.json. Realizar las integraciones por medio de la misma.
+
+
