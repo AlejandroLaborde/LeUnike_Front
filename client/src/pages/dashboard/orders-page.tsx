@@ -137,6 +137,29 @@ export default function OrdersPage() {
     products: [{ productId: "", quantity: 1 }],
     status: "pending" as OrderStatus,
   });
+  
+  // Selected products for order calculation
+  const [orderItems, setOrderItems] = useState<Array<{
+    productId: string;
+    quantity: number;
+    product?: Product;
+  }>>([{ productId: "", quantity: 1 }]);
+  
+  // Calculate total amount
+  const calculateTotal = () => {
+    if (!products) return { subtotal: 0, iva: 0, total: 0 };
+    
+    const subtotal = orderItems.reduce((sum, item) => {
+      if (!item.productId) return sum;
+      const product = products.find(p => p.id.toString() === item.productId);
+      return sum + (product ? product.price * item.quantity : 0);
+    }, 0);
+    
+    const iva = subtotal * 0.21; // 21% IVA
+    const total = subtotal + iva;
+    
+    return { subtotal, iva, total };
+  };
 
   // Fetch orders
   const { data: orders, isLoading } = useQuery({
@@ -165,6 +188,89 @@ export default function OrdersPage() {
     }
   });
 
+  // Functions to manage order items
+  const addProductToOrder = () => {
+    setOrderItems([...orderItems, { productId: "", quantity: 1 }]);
+  };
+  
+  const removeProductFromOrder = (index: number) => {
+    if (orderItems.length === 1) {
+      // Always keep at least one product slot
+      setOrderItems([{ productId: "", quantity: 1 }]);
+      return;
+    }
+    const newItems = [...orderItems];
+    newItems.splice(index, 1);
+    setOrderItems(newItems);
+  };
+  
+  const updateOrderItem = (index: number, field: 'productId' | 'quantity', value: string | number) => {
+    const newItems = [...orderItems];
+    
+    if (field === 'productId') {
+      const productId = value as string;
+      // Also update the product reference for easy access
+      const product = products?.find(p => p.id.toString() === productId);
+      newItems[index] = { ...newItems[index], productId, product };
+    } else if (field === 'quantity') {
+      // Ensure quantity is always a number
+      const quantity = typeof value === 'string' ? parseInt(value) : value;
+      newItems[index] = { ...newItems[index], quantity };
+    }
+    
+    setOrderItems(newItems);
+  };
+  
+  // Create order mutation
+  const createOrderMutation = useMutation({
+    mutationFn: async () => {
+      if (!formData.clientId || orderItems.some(item => !item.productId || item.quantity < 1)) {
+        throw new Error("Por favor completa todos los campos obligatorios");
+      }
+      
+      const { total } = calculateTotal();
+      
+      // Prepare order data
+      const orderData = {
+        clientId: parseInt(formData.clientId),
+        vendorId: user?.id, // Current user as vendor
+        status: formData.status,
+        totalAmount: total,
+        items: orderItems.map(item => ({
+          productId: parseInt(item.productId),
+          quantity: item.quantity,
+          unitPrice: products?.find(p => p.id.toString() === item.productId)?.price || 0
+        }))
+      };
+      
+      const res = await apiRequest('POST', '/api/orders', orderData);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      setIsNewOrderOpen(false);
+      // Reset form
+      setFormData({
+        clientId: "",
+        products: [{ productId: "", quantity: 1 }],
+        status: "pending" as OrderStatus,
+      });
+      setOrderItems([{ productId: "", quantity: 1 }]);
+      
+      toast({
+        title: "Pedido creado",
+        description: "El pedido ha sido creado correctamente",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error al crear el pedido",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+  
   // Change order status mutation
   const updateOrderStatusMutation = useMutation({
     mutationFn: async (data: { id: number, status: OrderStatus }) => {
@@ -697,8 +803,19 @@ export default function OrdersPage() {
         </DialogContent>
       </Dialog>
 
-      {/* New Order Dialog (simplified) */}
-      <Dialog open={isNewOrderOpen} onOpenChange={setIsNewOrderOpen}>
+      {/* New Order Dialog */}
+      <Dialog open={isNewOrderOpen} onOpenChange={(open) => {
+        if (!open) {
+          setIsNewOrderOpen(false);
+          // Reset form when closing
+          setFormData({
+            clientId: "",
+            products: [{ productId: "", quantity: 1 }],
+            status: "pending" as OrderStatus,
+          });
+          setOrderItems([{ productId: "", quantity: 1 }]);
+        }
+      }}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Nuevo Pedido</DialogTitle>
@@ -711,7 +828,15 @@ export default function OrdersPage() {
             {/* Client selection */}
             <div>
               <Label htmlFor="client" className="text-[#5d6d7c]">Cliente*</Label>
-              <Select>
+              <Select
+                value={formData.clientId}
+                onValueChange={(value) => {
+                  setFormData({
+                    ...formData,
+                    clientId: value
+                  });
+                }}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecciona un cliente" />
                 </SelectTrigger>
@@ -725,39 +850,60 @@ export default function OrdersPage() {
               </Select>
             </div>
             
-            {/* Products selection (simplified) */}
+            {/* Products selection */}
             <div>
               <Label className="text-[#5d6d7c] block mb-2">Productos*</Label>
               <Card>
                 <CardContent className="p-4">
                   <div className="space-y-3">
-                    <div className="flex items-end gap-2">
-                      <div className="flex-1">
-                        <Label htmlFor="product" className="text-xs text-[#5d6d7c]">Producto</Label>
-                        <Select>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecciona un producto" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {products?.map(product => (
-                              <SelectItem key={product.id} value={product.id.toString()}>
-                                {product.name} - ${product.price} ({product.unitSize})
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                    {orderItems.map((item, index) => (
+                      <div key={index} className="flex items-end gap-2">
+                        <div className="flex-1">
+                          <Label htmlFor={`product-${index}`} className="text-xs text-[#5d6d7c]">Producto</Label>
+                          <Select
+                            value={item.productId}
+                            onValueChange={(value) => updateOrderItem(index, 'productId', value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecciona un producto" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {products?.map(product => (
+                                <SelectItem key={product.id} value={product.id.toString()}>
+                                  {product.name} - ${product.price} ({product.unitSize})
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="w-20">
+                          <Label htmlFor={`quantity-${index}`} className="text-xs text-[#5d6d7c]">Cantidad</Label>
+                          <Input 
+                            id={`quantity-${index}`}
+                            type="number" 
+                            min="1" 
+                            value={item.quantity}
+                            onChange={(e) => updateOrderItem(index, 'quantity', parseInt(e.target.value) || 1)}
+                          />
+                        </div>
+                        <Button 
+                          variant="outline" 
+                          size="icon" 
+                          className="shrink-0"
+                          onClick={() => removeProductFromOrder(index)}
+                        >
+                          <Trash className="h-4 w-4" />
+                        </Button>
                       </div>
-                      <div className="w-20">
-                        <Label htmlFor="quantity" className="text-xs text-[#5d6d7c]">Cantidad</Label>
-                        <Input type="number" min="1" defaultValue="1" />
-                      </div>
-                      <Button variant="outline" size="icon" className="shrink-0">
-                        <Trash className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    ))}
                   </div>
                   
-                  <Button variant="outline" size="sm" className="mt-3 w-full">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-3 w-full"
+                    onClick={addProductToOrder}
+                  >
                     <Plus className="mr-1 h-4 w-4" />
                     Agregar otro producto
                   </Button>
@@ -769,18 +915,25 @@ export default function OrdersPage() {
             <div>
               <h3 className="text-sm font-medium text-[#5d6d7c] mb-2">Resumen</h3>
               <div className="bg-gray-50 rounded-md p-4">
-                <div className="flex justify-between">
-                  <span className="text-sm text-[#5d6d7c]">Subtotal:</span>
-                  <span className="font-medium">$0</span>
-                </div>
-                <div className="flex justify-between mt-1">
-                  <span className="text-sm text-[#5d6d7c]">IVA (21%):</span>
-                  <span className="font-medium">$0</span>
-                </div>
-                <div className="flex justify-between mt-2 pt-2 border-t">
-                  <span className="font-medium">Total:</span>
-                  <span className="font-bold text-[#e3a765]">$0</span>
-                </div>
+                {(() => {
+                  const { subtotal, iva, total } = calculateTotal();
+                  return (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-[#5d6d7c]">Subtotal:</span>
+                        <span className="font-medium">${subtotal.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      </div>
+                      <div className="flex justify-between mt-1">
+                        <span className="text-sm text-[#5d6d7c]">IVA (21%):</span>
+                        <span className="font-medium">${iva.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      </div>
+                      <div className="flex justify-between mt-2 pt-2 border-t">
+                        <span className="font-medium">Total:</span>
+                        <span className="font-bold text-[#e3a765]">${total.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             </div>
           </div>
@@ -792,8 +945,15 @@ export default function OrdersPage() {
             >
               Cancelar
             </Button>
-            <Button className="bg-[#e3a765] hover:bg-[#e3a765]/90">
-              Crear pedido
+            <Button 
+              className="bg-[#e3a765] hover:bg-[#e3a765]/90"
+              onClick={() => createOrderMutation.mutate()}
+              disabled={createOrderMutation.isPending}
+            >
+              {createOrderMutation.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Crear Pedido
             </Button>
           </DialogFooter>
         </DialogContent>
