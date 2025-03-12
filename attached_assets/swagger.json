@@ -1,0 +1,1204 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+      "title": "Le Unike API",
+      "description": "API para la gestión de pedidos y productos de Le Unike",
+      "version": "1.0.0"
+    },
+    "paths": {
+      "/api/qr": {
+        "get": {
+          "summary": "Obtiene el código QR para la autenticación en WhatsApp Web",
+          "description": "Genera y devuelve el código QR para que el usuario pueda escanearlo y autenticar la sesión de WhatsApp.",
+          "responses": {
+            "200": {
+              "description": "Código QR generado con éxito",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "qr": {
+                        "type": "string",
+                        "description": "Código QR en formato base64"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "QR no generado aún"
+            }
+          }
+        }
+      },
+      "/api/messages/{userId}": {
+        "get": {
+          "summary": "Obtiene todos los mensajes de un usuario",
+          "description": "Devuelve los mensajes enviados por un usuario específico.",
+          "parameters": [
+            {
+              "in": "path",
+              "name": "userId",
+              "required": true,
+              "description": "ID del usuario para obtener los mensajes",
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Mensajes obtenidos con éxito",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "messages": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "from": {
+                              "type": "string",
+                              "description": "El remitente del mensaje"
+                            },
+                            "to": {
+                              "type": "string",
+                              "description": "El destinatario del mensaje"
+                            },
+                            "body": {
+                              "type": "string",
+                              "description": "El contenido del mensaje"
+                            },
+                            "type": {
+                              "type": "string",
+                              "description": "El tipo del mensaje (texto, imagen, etc.)"
+                            },
+                            "timestamp": {
+                              "type": "string",
+                              "description": "Fecha y hora del mensaje"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Error al obtener los mensajes"
+            }
+          }
+        }
+      },
+      "/api/send": {
+        "post": {
+          "summary": "Enviar un mensaje a un usuario",
+          "description": "Permite enviar un mensaje de texto a un usuario a través de WhatsApp.",
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "from": {
+                      "type": "string",
+                      "description": "El número de teléfono del remitente (debe estar en formato internacional)",
+                      "example": "5491158100725"
+                    },
+                    "to": {
+                      "type": "string",
+                      "description": "El número de teléfono del destinatario (debe estar en formato internacional)",
+                      "example": "5491158100726"
+                    },
+                    "body": {
+                      "type": "string",
+                      "description": "El cuerpo del mensaje",
+                      "example": "Hola, ¿cómo estás?"
+                    },
+                    "type": {
+                      "type": "string",
+                      "description": "El tipo de mensaje (ej. \"text\", \"image\", etc.)",
+                      "example": "text"
+                    },
+                    "deviceType": {
+                      "type": "string",
+                      "description": "El tipo de dispositivo del remitente (ej. \"mobile\", \"desktop\")",
+                      "example": "mobile"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Mensaje enviado con éxito",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "status": {
+                        "type": "string",
+                        "description": "El estado de la operación",
+                        "example": "Mensaje enviado y guardado en MongoDB!"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Error al enviar el mensaje"
+            }
+          }
+        }
+      },
+      "/api/sellers": {
+        "post": {
+          "summary": "Crear un nuevo vendedor",
+          "description": "Permite crear un nuevo vendedor con la información de nombre, teléfono, y zona.",
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "description": "Nombre del vendedor",
+                      "example": "Juan Pérez"
+                    },
+                    "phone": {
+                      "type": "string",
+                      "description": "Número de teléfono del vendedor (formato internacional)",
+                      "example": "5491158100725"
+                    },
+                    "zone": {
+                      "type": "string",
+                      "description": "Zona en la que opera el vendedor",
+                      "example": "Zona Norte"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "201": {
+              "description": "Vendedor creado exitosamente",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "message": {
+                        "type": "string",
+                        "description": "Mensaje de éxito",
+                        "example": "Vendedor creado con éxito"
+                      },
+                      "seller": {
+                        "type": "object",
+                        "properties": {
+                          "_id": {
+                            "type": "string",
+                            "description": "ID del vendedor creado",
+                            "example": "60f7c8e1a26c6d001f8d3c78"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "Nombre del vendedor",
+                            "example": "Juan Pérez"
+                          },
+                          "phone": {
+                            "type": "string",
+                            "description": "Número de teléfono del vendedor",
+                            "example": "5491158100725"
+                          },
+                          "zone": {
+                            "type": "string",
+                            "description": "Zona del vendedor",
+                            "example": "Zona Norte"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Error al crear el vendedor (por ejemplo, datos incompletos o inválidos)"
+            },
+            "500": {
+              "description": "Error interno del servidor al crear el vendedor"
+            }
+          }
+        },
+        "get": {
+          "summary": "Obtener la lista de vendedores",
+          "description": "Devuelve una lista con todos los vendedores registrados en el sistema.",
+          "responses": {
+            "200": {
+              "description": "Lista de vendedores obtenida exitosamente",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "sellers": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "_id": {
+                              "type": "string",
+                              "description": "ID del vendedor",
+                              "example": "60f7c8e1a26c6d001f8d3c78"
+                            },
+                            "name": {
+                              "type": "string",
+                              "description": "Nombre del vendedor",
+                              "example": "Juan Pérez"
+                            },
+                            "phone": {
+                              "type": "string",
+                              "description": "Número de teléfono del vendedor",
+                              "example": "5491158100725"
+                            },
+                            "zone": {
+                              "type": "string",
+                              "description": "Zona en la que opera el vendedor",
+                              "example": "Zona Norte"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Error interno del servidor al obtener la lista de vendedores"
+            }
+          }
+        }
+      },
+      "/api/products": {
+        "post": {
+          "summary": "Crear un nuevo producto",
+          "description": "Permite agregar un nuevo producto con nombre, descripción, precio y stock disponible.",
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "description": "Nombre del producto",
+                      "example": "Sorrentinos de jamón y queso"
+                    },
+                    "description": {
+                      "type": "string",
+                      "description": "Descripción detallada del producto",
+                      "example": "Sorrentinos rellenos de jamón y queso, ideales para una comida rápida."
+                    },
+                    "price": {
+                      "type": "number",
+                      "format": "float",
+                      "description": "Precio por unidad del producto",
+                      "example": 350
+                    },
+                    "stock": {
+                      "type": "integer",
+                      "description": "Cantidad disponible en stock del producto",
+                      "example": 150
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "201": {
+              "description": "Producto creado exitosamente",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "message": {
+                        "type": "string",
+                        "description": "Mensaje de éxito",
+                        "example": "Producto creado con éxito"
+                      },
+                      "product": {
+                        "type": "object",
+                        "properties": {
+                          "_id": {
+                            "type": "string",
+                            "description": "ID del producto creado",
+                            "example": "60f7c8e1a26c6d001f8d3c78"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "Nombre del producto",
+                            "example": "Sorrentinos de jamón y queso"
+                          },
+                          "description": {
+                            "type": "string",
+                            "description": "Descripción del producto",
+                            "example": "Sorrentinos rellenos de jamón y queso"
+                          },
+                          "price": {
+                            "type": "number",
+                            "format": "float",
+                            "description": "Precio del producto",
+                            "example": 350
+                          },
+                          "stock": {
+                            "type": "integer",
+                            "description": "Cantidad disponible en stock",
+                            "example": 150
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Error al crear el producto (por ejemplo, datos incompletos o inválidos)"
+            },
+            "500": {
+              "description": "Error interno del servidor al crear el producto"
+            }
+          }
+        },
+        "get": {
+          "summary": "Obtener la lista de productos",
+          "description": "Devuelve una lista con todos los productos disponibles en el sistema.",
+          "responses": {
+            "200": {
+              "description": "Lista de productos obtenida exitosamente",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "products": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "_id": {
+                              "type": "string",
+                              "description": "ID del producto",
+                              "example": "60f7c8e1a26c6d001f8d3c78"
+                            },
+                            "name": {
+                              "type": "string",
+                              "description": "Nombre del producto",
+                              "example": "Sorrentinos de jamón y queso"
+                            },
+                            "description": {
+                              "type": "string",
+                              "description": "Descripción del producto",
+                              "example": "Sorrentinos rellenos de jamón y queso, ideales para una comida rápida."
+                            },
+                            "price": {
+                              "type": "number",
+                              "format": "float",
+                              "description": "Precio por unidad del producto",
+                              "example": 350
+                            },
+                            "stock": {
+                              "type": "integer",
+                              "description": "Cantidad disponible en stock del producto",
+                              "example": 150
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Error interno del servidor al obtener la lista de productos"
+            }
+          }
+        }
+      },
+      "/api/sales": {
+        "post": {
+          "summary": "Registrar una venta",
+          "description": "Permite registrar una venta de un producto realizado por un vendedor, calculando la comisión del vendedor.",
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "sellerId": {
+                      "type": "string",
+                      "description": "ID del vendedor que realiza la venta",
+                      "example": "60f7c8e1a26c6d001f8d3c78"
+                    },
+                    "productId": {
+                      "type": "string",
+                      "description": "ID del producto que se ha vendido",
+                      "example": "60f7c8e1a26c6d001f8d3c79"
+                    },
+                    "quantity": {
+                      "type": "integer",
+                      "description": "Cantidad del producto vendida",
+                      "example": 10
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "201": {
+              "description": "Venta registrada exitosamente",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "message": {
+                        "type": "string",
+                        "description": "Mensaje de éxito",
+                        "example": "Venta registrada con éxito"
+                      },
+                      "sale": {
+                        "type": "object",
+                        "properties": {
+                          "_id": {
+                            "type": "string",
+                            "description": "ID de la venta registrada",
+                            "example": "60f7c8e1a26c6d001f8d3c80"
+                          },
+                          "seller": {
+                            "type": "string",
+                            "description": "ID del vendedor",
+                            "example": "60f7c8e1a26c6d001f8d3c78"
+                          },
+                          "product": {
+                            "type": "string",
+                            "description": "ID del producto vendido",
+                            "example": "60f7c8e1a26c6d001f8d3c79"
+                          },
+                          "quantity": {
+                            "type": "integer",
+                            "description": "Cantidad del producto vendido",
+                            "example": 10
+                          },
+                          "total": {
+                            "type": "number",
+                            "format": "float",
+                            "description": "Total de la venta (precio * cantidad)",
+                            "example": 3500
+                          },
+                          "commission": {
+                            "type": "number",
+                            "format": "float",
+                            "description": "Comisión del vendedor por la venta",
+                            "example": 350
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Error al registrar la venta (por ejemplo, datos incompletos o inválidos)"
+            },
+            "404": {
+              "description": "Vendedor o producto no encontrado"
+            },
+            "500": {
+              "description": "Error interno del servidor al registrar la venta"
+            }
+          }
+        }
+      },
+      "/api/sales/{sellerId}": {
+        "get": {
+          "summary": "Obtener las ventas de un vendedor",
+          "description": "Devuelve todas las ventas realizadas por un vendedor específico, incluyendo la cantidad de productos vendidos, el total de la venta y la comisión del vendedor.",
+          "parameters": [
+            {
+              "in": "path",
+              "name": "sellerId",
+              "required": true,
+              "description": "ID del vendedor para obtener sus ventas",
+              "schema": {
+                "type": "string",
+                "example": "60f7c8e1a26c6d001f8d3c78"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Ventas obtenidas con éxito",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "sales": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "_id": {
+                              "type": "string",
+                              "description": "ID de la venta",
+                              "example": "60f7c8e1a26c6d001f8d3c80"
+                            },
+                            "product": {
+                              "type": "string",
+                              "description": "ID del producto vendido",
+                              "example": "60f7c8e1a26c6d001f8d3c79"
+                            },
+                            "quantity": {
+                              "type": "integer",
+                              "description": "Cantidad de productos vendidos",
+                              "example": 10
+                            },
+                            "total": {
+                              "type": "number",
+                              "format": "float",
+                              "description": "Total de la venta (precio * cantidad)",
+                              "example": 3500
+                            },
+                            "commission": {
+                              "type": "number",
+                              "format": "float",
+                              "description": "Comisión del vendedor por la venta",
+                              "example": 350
+                            },
+                            "date": {
+                              "type": "string",
+                              "format": "date-time",
+                              "description": "Fecha en la que se realizó la venta",
+                              "example": "2025-02-17T14:30:00Z"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Vendedor no encontrado"
+            },
+            "500": {
+              "description": "Error interno del servidor al obtener las ventas"
+            }
+          }
+        }
+      },
+      "/api/sales/stats": {
+        "get": {
+          "summary": "Obtener estadísticas de ventas",
+          "description": "Devuelve estadísticas globales de ventas por vendedor, como el total vendido y la comisión generada.",
+          "responses": {
+            "200": {
+              "description": "Estadísticas de ventas obtenidas exitosamente",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "stats": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "_id": {
+                              "type": "string",
+                              "description": "ID del vendedor",
+                              "example": "60f7c8e1a26c6d001f8d3c78"
+                            },
+                            "totalSales": {
+                              "type": "number",
+                              "format": "float",
+                              "description": "Total de ventas realizadas por el vendedor",
+                              "example": 10500
+                            },
+                            "totalCommission": {
+                              "type": "number",
+                              "format": "float",
+                              "description": "Total de comisión generada por el vendedor",
+                              "example": 1050
+                            },
+                            "sellerName": {
+                              "type": "string",
+                              "description": "Nombre del vendedor",
+                              "example": "Juan Pérez"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Error interno del servidor al obtener las estadísticas de ventas"
+            }
+          }
+        }
+      },
+      "/api/sales/product/{productId}": {
+        "get": {
+          "summary": "Obtener las ventas de un producto específico",
+          "description": "Devuelve todas las ventas realizadas para un producto específico, incluyendo la cantidad de productos vendidos, el total de la venta y la comisión del vendedor.",
+          "parameters": [
+            {
+              "in": "path",
+              "name": "productId",
+              "required": true,
+              "description": "ID del producto para obtener las ventas",
+              "schema": {
+                "type": "string",
+                "example": "60f7c8e1a26c6d001f8d3c79"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Ventas obtenidas exitosamente",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "sales": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "_id": {
+                              "type": "string",
+                              "description": "ID de la venta",
+                              "example": "60f7c8e1a26c6d001f8d3c80"
+                            },
+                            "seller": {
+                              "type": "string",
+                              "description": "ID del vendedor que realizó la venta",
+                              "example": "60f7c8e1a26c6d001f8d3c78"
+                            },
+                            "quantity": {
+                              "type": "integer",
+                              "description": "Cantidad de productos vendidos",
+                              "example": 10
+                            },
+                            "total": {
+                              "type": "number",
+                              "format": "float",
+                              "description": "Total de la venta (precio * cantidad)",
+                              "example": 3500
+                            },
+                            "commission": {
+                              "type": "number",
+                              "format": "float",
+                              "description": "Comisión del vendedor por la venta",
+                              "example": 350
+                            },
+                            "date": {
+                              "type": "string",
+                              "format": "date-time",
+                              "description": "Fecha en la que se realizó la venta",
+                              "example": "2025-02-17T14:30:00Z"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Producto no encontrado"
+            },
+            "500": {
+              "description": "Error interno del servidor al obtener las ventas"
+            }
+          }
+        }
+      },
+      "/api/sales/{sellerId}/date": {
+        "get": {
+          "summary": "Obtener las ventas de un vendedor por fecha",
+          "description": "Devuelve todas las ventas realizadas por un vendedor específico en un rango de fechas proporcionado.",
+          "parameters": [
+            {
+              "in": "path",
+              "name": "sellerId",
+              "required": true,
+              "description": "ID del vendedor para obtener sus ventas",
+              "schema": {
+                "type": "string",
+                "example": "60f7c8e1a26c6d001f8d3c78"
+              }
+            },
+            {
+              "in": "query",
+              "name": "startDate",
+              "required": true,
+              "description": "Fecha de inicio del rango de fechas (formato YYYY-MM-DD)",
+              "schema": {
+                "type": "string",
+                "example": "2025-01-01"
+              }
+            },
+            {
+              "in": "query",
+              "name": "endDate",
+              "required": true,
+              "description": "Fecha de fin del rango de fechas (formato YYYY-MM-DD)",
+              "schema": {
+                "type": "string",
+                "example": "2025-02-01"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Ventas obtenidas exitosamente",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "sales": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "_id": {
+                              "type": "string",
+                              "description": "ID de la venta",
+                              "example": "60f7c8e1a26c6d001f8d3c80"
+                            },
+                            "product": {
+                              "type": "string",
+                              "description": "ID del producto vendido",
+                              "example": "60f7c8e1a26c6d001f8d3c79"
+                            },
+                            "quantity": {
+                              "type": "integer",
+                              "description": "Cantidad de productos vendidos",
+                              "example": 10
+                            },
+                            "total": {
+                              "type": "number",
+                              "format": "float",
+                              "description": "Total de la venta (precio * cantidad)",
+                              "example": 3500
+                            },
+                            "commission": {
+                              "type": "number",
+                              "format": "float",
+                              "description": "Comisión del vendedor por la venta",
+                              "example": 350
+                            },
+                            "date": {
+                              "type": "string",
+                              "format": "date-time",
+                              "description": "Fecha en la que se realizó la venta",
+                              "example": "2025-02-17T14:30:00Z"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Vendedor no encontrado"
+            },
+            "500": {
+              "description": "Error interno del servidor al obtener las ventas por fecha"
+            }
+          }
+        }
+      },
+      "/api/commission": {
+        "post": {
+          "summary": "Registrar un pago de comisión a un vendedor",
+          "description": "Permite registrar el pago de comisión a un vendedor, ajustando el monto de comisión pendiente.",
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "sellerId": {
+                      "type": "string",
+                      "description": "ID del vendedor al que se le paga la comisión",
+                      "example": "60f7c8e1a26c6d001f8d3c78"
+                    },
+                    "amount": {
+                      "type": "number",
+                      "format": "float",
+                      "description": "Monto de la comisión que se le paga al vendedor",
+                      "example": 350
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Pago de comisión registrado con éxito",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "message": {
+                        "type": "string",
+                        "description": "Mensaje de éxito",
+                        "example": "Comisión pagada con éxito"
+                      },
+                      "seller": {
+                        "type": "object",
+                        "properties": {
+                          "_id": {
+                            "type": "string",
+                            "description": "ID del vendedor",
+                            "example": "60f7c8e1a26c6d001f8d3c78"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "Nombre del vendedor",
+                            "example": "Juan Pérez"
+                          },
+                          "commission": {
+                            "type": "number",
+                            "format": "float",
+                            "description": "Nueva comisión pendiente del vendedor",
+                            "example": 0
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Error de solicitud (por ejemplo, monto inválido)"
+            },
+            "404": {
+              "description": "Vendedor no encontrado"
+            },
+            "500": {
+              "description": "Error interno del servidor al registrar el pago de comisión"
+            }
+          }
+        }
+      },
+      "/api/assign-client": {
+        "post": {
+          "summary": "Asignar un cliente a un vendedor",
+          "description": "Permite asignar un cliente a un vendedor, creando una relación entre ambos.",
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "clientId": {
+                      "type": "string",
+                      "description": "ID del cliente a asignar",
+                      "example": "60f7c8e1a26c6d001f8d3c80"
+                    },
+                    "sellerId": {
+                      "type": "string",
+                      "description": "ID del vendedor al que se le asigna el cliente",
+                      "example": "60f7c8e1a26c6d001f8d3c78"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Cliente asignado al vendedor con éxito",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "message": {
+                        "type": "string",
+                        "description": "Mensaje de éxito",
+                        "example": "Cliente asignado al vendedor con éxito"
+                      },
+                      "client": {
+                        "type": "object",
+                        "properties": {
+                          "_id": {
+                            "type": "string",
+                            "description": "ID del cliente",
+                            "example": "60f7c8e1a26c6d001f8d3c80"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "Nombre del cliente",
+                            "example": "Juan Pérez"
+                          },
+                          "seller": {
+                            "type": "string",
+                            "description": "ID del vendedor asignado",
+                            "example": "60f7c8e1a26c6d001f8d3c78"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Error de solicitud (por ejemplo, falta de datos)"
+            },
+            "404": {
+              "description": "Cliente o vendedor no encontrado"
+            },
+            "500": {
+              "description": "Error interno del servidor al asignar el cliente"
+            }
+          }
+        }
+      },
+      "/api/clients/{sellerId}": {
+        "get": {
+          "summary": "Obtener los clientes asignados a un vendedor",
+          "description": "Devuelve todos los clientes asignados a un vendedor específico, mostrando sus detalles básicos.",
+          "parameters": [
+            {
+              "in": "path",
+              "name": "sellerId",
+              "required": true,
+              "description": "ID del vendedor para obtener sus clientes asignados",
+              "schema": {
+                "type": "string",
+                "example": "60f7c8e1a26c6d001f8d3c78"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Clientes obtenidos exitosamente",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "clients": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "_id": {
+                              "type": "string",
+                              "description": "ID del cliente",
+                              "example": "60f7c8e1a26c6d001f8d3c80"
+                            },
+                            "name": {
+                              "type": "string",
+                              "description": "Nombre del cliente",
+                              "example": "Juan Pérez"
+                            },
+                            "phone": {
+                              "type": "string",
+                              "description": "Teléfono del cliente",
+                              "example": "5491158100725"
+                            },
+                            "seller": {
+                              "type": "string",
+                              "description": "ID del vendedor asignado",
+                              "example": "60f7c8e1a26c6d001f8d3c78"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Vendedor no encontrado"
+            },
+            "500": {
+              "description": "Error interno del servidor al obtener los clientes"
+            }
+          }
+        }
+      },
+      "/api/clients": {
+        "post": {
+          "summary": "Crear un nuevo cliente",
+          "description": "Permite crear un nuevo cliente con información obtenida de WhatsApp y datos complementarios.",
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "description": "Nombre del cliente",
+                      "example": "Juan Pérez"
+                    },
+                    "phone": {
+                      "type": "string",
+                      "description": "Número de teléfono del cliente (formato internacional)",
+                      "example": "5491158100725"
+                    },
+                    "seller": {
+                      "type": "string",
+                      "description": "ID del vendedor asignado al cliente",
+                      "example": "60f7c8e1a26c6d001f8d3c78"
+                    },
+                    "status": {
+                      "type": "string",
+                      "description": "Estado del cliente (activo o inactivo)",
+                      "example": "active"
+                    },
+                    "whatsappId": {
+                      "type": "string",
+                      "description": "ID de WhatsApp del cliente",
+                      "example": "5491158100725@c.us"
+                    },
+                    "lastContact": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "Fecha del último contacto con el cliente",
+                      "example": "2025-02-18T15:30:00Z"
+                    },
+                    "address": {
+                      "type": "string",
+                      "description": "Dirección del cliente (opcional)",
+                      "example": "Calle Falsa 123, Buenos Aires"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "201": {
+              "description": "Cliente creado exitosamente",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "message": {
+                        "type": "string",
+                        "description": "Mensaje de éxito",
+                        "example": "Cliente creado con éxito"
+                      },
+                      "client": {
+                        "type": "object",
+                        "properties": {
+                          "_id": {
+                            "type": "string",
+                            "description": "ID del cliente",
+                            "example": "60f7c8e1a26c6d001f8d3c80"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "Nombre del cliente",
+                            "example": "Juan Pérez"
+                          },
+                          "phone": {
+                            "type": "string",
+                            "description": "Teléfono del cliente",
+                            "example": "5491158100725"
+                          },
+                          "sellerId": {
+                            "type": "string",
+                            "description": "ID del vendedor asignado",
+                            "example": "60f7c8e1a26c6d001f8d3c78"
+                          },
+                          "status": {
+                            "type": "string",
+                            "description": "Estado del cliente",
+                            "example": "active"
+                          },
+                          "whatsappId": {
+                            "type": "string",
+                            "description": "ID de WhatsApp del cliente",
+                            "example": "5491158100725@c.us"
+                          },
+                          "lastContact": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "Fecha del último contacto",
+                            "example": "2025-02-18T15:30:00Z"
+                          },
+                          "address": {
+                            "type": "string",
+                            "description": "Dirección del cliente",
+                            "example": "Calle Falsa 123, Buenos Aires"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Error de solicitud (por ejemplo, falta de datos)"
+            },
+            "404": {
+              "description": "Vendedor no encontrado"
+            },
+            "500": {
+              "description": "Error interno del servidor al crear el cliente"
+            }
+          }
+        }
+      }
+    },
+    "components": {},
+    "tags": []
+  }

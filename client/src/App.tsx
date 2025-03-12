@@ -18,6 +18,7 @@ import ClientsPage from "./pages/dashboard/clients-page";
 import ChatsPage from "./pages/dashboard/chats-page";
 import OrdersPage from "./pages/dashboard/orders-page";
 import MetricsPage from "./pages/dashboard/metrics-page";
+import UsersPage from "./pages/dashboard/users-page";
 import { AuthProvider } from "./hooks/use-auth";
 import { WhatsappButton } from "./components/whatsapp-button";
 

@@ -15,7 +15,8 @@ import {
   Bell, 
   LogOut, 
   Menu, 
-  X 
+  X,
+  ShieldAlert
 } from "lucide-react";
 
 type SidebarItem = {
@@ -23,6 +24,7 @@ type SidebarItem = {
   label: string;
   href: string;
   requiresAdmin: boolean;
+  requiresSuperAdmin?: boolean;
 };
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
@@ -79,6 +81,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       href: "/dashboard/metrics",
       requiresAdmin: true
     },
+    { 
+      icon: <ShieldAlert size={20} />, 
+      label: "Usuarios", 
+      href: "/dashboard/users",
+      requiresAdmin: true,
+      requiresSuperAdmin: true
+    },
   ];
 
   // Set current page title based on location
@@ -94,9 +103,15 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   };
 
   // Filter sidebar items based on user role
-  const filteredSidebarItems = sidebarItems.filter(item => 
-    !item.requiresAdmin || (item.requiresAdmin && isAdmin)
-  );
+  const filteredSidebarItems = sidebarItems.filter(item => {
+    // If the item requires super admin privileges and user is not a super admin, hide it
+    if (item.requiresSuperAdmin && !isSuperAdmin) {
+      return false;
+    }
+    
+    // Check admin privileges
+    return !item.requiresAdmin || (item.requiresAdmin && isAdmin);
+  });
 
   return (
     <div className="min-h-screen flex bg-[#f2efe2]">
