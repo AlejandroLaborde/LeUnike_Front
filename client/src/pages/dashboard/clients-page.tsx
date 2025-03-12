@@ -496,7 +496,7 @@ export default function ClientsPage() {
                         <SelectValue placeholder="Seleccionar vendedor" />
                       </SelectTrigger>
                       <SelectContent>
-                        {vendors?.map((vendor) => (
+                        {vendors?.map((vendor: {id: number, name: string}) => (
                           <SelectItem key={vendor.id} value={vendor.id.toString()}>
                             {vendor.name}
                           </SelectItem>
