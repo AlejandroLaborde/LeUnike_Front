@@ -49,6 +49,7 @@ function Router() {
               <Route path="/dashboard/chats" component={ChatsPage} />
               <Route path="/dashboard/orders" component={OrdersPage} />
               <Route path="/dashboard/metrics" component={MetricsPage} />
+              <Route path="/dashboard/users" component={UsersPage} />
               <Route component={NotFound} />
             </Switch>
           </DashboardLayout>
