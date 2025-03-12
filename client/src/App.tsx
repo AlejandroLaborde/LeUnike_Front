@@ -22,27 +22,6 @@ import UsersPage from "./pages/dashboard/users-page";
 import { AuthProvider } from "./hooks/use-auth";
 import { WhatsappButton } from "./components/whatsapp-button";
 
-// Dashboard routes handler component
-function DashboardRoutes() {
-  return (
-    <ProtectedRoute>
-      <DashboardLayout>
-        <Switch>
-          <Route path="/dashboard" component={DashboardPage} />
-          <Route path="/dashboard/products" component={ProductsPage} />
-          <Route path="/dashboard/vendors" component={VendorsPage} />
-          <Route path="/dashboard/clients" component={ClientsPage} />
-          <Route path="/dashboard/chats" component={ChatsPage} />
-          <Route path="/dashboard/orders" component={OrdersPage} />
-          <Route path="/dashboard/metrics" component={MetricsPage} />
-          <Route path="/dashboard/users" component={UsersPage} />
-          <Route component={NotFound} />
-        </Switch>
-      </DashboardLayout>
-    </ProtectedRoute>
-  );
-}
-
 function Router() {
   const [location] = useLocation();
   
@@ -59,8 +38,86 @@ function Router() {
         <Route path="/contact" component={ContactPage} />
         <Route path="/auth" component={AuthPage} />
         
-        {/* Dashboard pages */}
-        <Route path="/dashboard/:rest*" component={DashboardRoutes} />
+        {/* Protected Routes */}
+        <Route path="/dashboard">
+          {() => (
+            <ProtectedRoute>
+              <DashboardLayout>
+                <DashboardPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          )}
+        </Route>
+
+        <Route path="/dashboard/products">
+          {() => (
+            <ProtectedRoute>
+              <DashboardLayout>
+                <ProductsPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          )}
+        </Route>
+
+        <Route path="/dashboard/vendors">
+          {() => (
+            <ProtectedRoute>
+              <DashboardLayout>
+                <VendorsPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          )}
+        </Route>
+
+        <Route path="/dashboard/clients">
+          {() => (
+            <ProtectedRoute>
+              <DashboardLayout>
+                <ClientsPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          )}
+        </Route>
+
+        <Route path="/dashboard/chats">
+          {() => (
+            <ProtectedRoute>
+              <DashboardLayout>
+                <ChatsPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          )}
+        </Route>
+
+        <Route path="/dashboard/orders">
+          {() => (
+            <ProtectedRoute>
+              <DashboardLayout>
+                <OrdersPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          )}
+        </Route>
+
+        <Route path="/dashboard/metrics">
+          {() => (
+            <ProtectedRoute>
+              <DashboardLayout>
+                <MetricsPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          )}
+        </Route>
+
+        <Route path="/dashboard/users">
+          {() => (
+            <ProtectedRoute>
+              <DashboardLayout>
+                <UsersPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          )}
+        </Route>
         
         {/* Fallback to 404 */}
         <Route component={NotFound} />
