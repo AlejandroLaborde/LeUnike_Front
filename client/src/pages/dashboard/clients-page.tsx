@@ -9,6 +9,13 @@ import {
   CardTitle, 
   CardDescription 
 } from "@/components/ui/card";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem
+} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
@@ -87,7 +94,8 @@ export default function ClientsPage() {
     name: "",
     email: "",
     phone: "",
-    address: ""
+    address: "",
+    vendorId: ""
   });
 
   // Fetch clients
@@ -97,6 +105,16 @@ export default function ClientsPage() {
       const res = await apiRequest('GET', '/api/clients');
       return await res.json() as Client[];
     }
+  });
+  
+  // Fetch vendors (only for admin users)
+  const { data: vendors } = useQuery({
+    queryKey: ['/api/users/vendors'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/users/vendors');
+      return await res.json() as Array<{id: number, name: string, username: string}>;
+    },
+    enabled: isAdmin
   });
 
   // Mutations
@@ -159,7 +177,8 @@ export default function ClientsPage() {
       name: "",
       email: "",
       phone: "",
-      address: ""
+      address: "",
+      vendorId: ""
     });
   };
 
@@ -181,7 +200,8 @@ export default function ClientsPage() {
       name: client.name,
       email: client.email || "",
       phone: client.phone,
-      address: client.address || ""
+      address: client.address || "",
+      vendorId: client.vendorId ? client.vendorId.toString() : ""
     });
   };
 
@@ -456,6 +476,40 @@ export default function ClientsPage() {
                     onChange={handleInputChange} 
                   />
                 </div>
+                
+                {isAdmin && (
+                  <div>
+                    <Label htmlFor="vendorId" className="text-[#5d6d7c]">
+                      {!editClient ? 'Asignar a vendedor*' : 'Reasignar a vendedor*'}
+                    </Label>
+                    <Select
+                      name="vendorId"
+                      value={formData.vendorId}
+                      onValueChange={(value) => {
+                        setFormData({
+                          ...formData,
+                          vendorId: value
+                        });
+                      }}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Seleccionar vendedor" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {vendors?.map((vendor) => (
+                          <SelectItem key={vendor.id} value={vendor.id.toString()}>
+                            {vendor.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {!editClient && (
+                      <p className="text-sm text-[#5d6d7c] mt-1">
+                        Los clientes deben estar asignados a un vendedor para su seguimiento.
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
             

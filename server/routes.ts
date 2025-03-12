@@ -97,6 +97,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       next(error);
     }
   });
+  
+  // Get only vendor users (for client assignment)
+  app.get("/api/users/vendors", isAuthenticated, async (req, res, next) => {
+    try {
+      const users = await storage.getAllUsers();
+      const vendors = users.filter(user => user.role === 'vendor' && user.active);
+      res.json(vendors);
+    } catch (error) {
+      next(error);
+    }
+  });
 
   // Products routes
   app.get("/api/products", isAuthenticated, async (req, res, next) => {
@@ -162,10 +173,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/clients", isAuthenticated, async (req, res, next) => {
     try {
+      const isAdminUser = req.user?.role === "admin" || req.user?.role === "super_admin";
+      
+      // If user is admin/super_admin, use the vendorId from the request
+      // Otherwise, set the vendorId to the current user's ID
       const clientData = insertClientSchema.parse({
         ...req.body,
-        vendorId: req.user?.id
+        vendorId: isAdminUser && req.body.vendorId 
+          ? parseInt(req.body.vendorId) 
+          : req.user?.id
       });
+      
       const client = await storage.createClient(clientData);
       res.status(201).json(client);
     } catch (error) {
@@ -186,7 +204,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      const clientData = insertClientSchema.partial().parse(req.body);
+      // Process vendorId - only admins can change it
+      const dataToUpdate = { ...req.body };
+      if (isAdminUser && dataToUpdate.vendorId) {
+        dataToUpdate.vendorId = parseInt(dataToUpdate.vendorId);
+      } else if (!isAdminUser) {
+        // Non-admins cannot change vendorId
+        delete dataToUpdate.vendorId;
+      }
+      
+      const clientData = insertClientSchema.partial().parse(dataToUpdate);
       const updatedClient = await storage.updateClient(clientId, clientData);
       if (!updatedClient) {
         return res.status(404).json({ message: "Cliente no encontrado" });
