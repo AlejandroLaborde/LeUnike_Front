@@ -29,30 +29,14 @@ function DashboardRoutes() {
       <DashboardLayout>
         <Switch>
           <Route path="/dashboard" component={DashboardPage} />
-          <Route path="/dashboard/products">
-            <ProductsPage />
-          </Route>
-          <Route path="/dashboard/vendors">
-            <VendorsPage />
-          </Route>
-          <Route path="/dashboard/clients">
-            <ClientsPage />
-          </Route>
-          <Route path="/dashboard/chats">
-            <ChatsPage />
-          </Route>
-          <Route path="/dashboard/orders">
-            <OrdersPage />
-          </Route>
-          <Route path="/dashboard/metrics">
-            <MetricsPage />
-          </Route>
-          <Route path="/dashboard/users">
-            <UsersPage />
-          </Route>
-          <Route>
-            <NotFound />
-          </Route>
+          <Route path="/dashboard/products" component={ProductsPage} />
+          <Route path="/dashboard/vendors" component={VendorsPage} />
+          <Route path="/dashboard/clients" component={ClientsPage} />
+          <Route path="/dashboard/chats" component={ChatsPage} />
+          <Route path="/dashboard/orders" component={OrdersPage} />
+          <Route path="/dashboard/metrics" component={MetricsPage} />
+          <Route path="/dashboard/users" component={UsersPage} />
+          <Route component={NotFound} />
         </Switch>
       </DashboardLayout>
     </ProtectedRoute>
