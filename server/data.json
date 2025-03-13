@@ -64,7 +64,7 @@
       "isFeatured": false,
       "active": true,
       "unitSize": "1",
-      "stock": 20,
+      "stock": 15,
       "id": 2,
       "createdAt": "2025-03-13T14:51:24.639Z"
     }
@@ -113,6 +113,14 @@
       "status": "pending",
       "id": 4,
       "createdAt": "2025-03-13T14:03:34.495Z"
+    },
+    {
+      "clientId": 1,
+      "vendorId": 1,
+      "totalAmount": 9075,
+      "status": "pending",
+      "id": 5,
+      "createdAt": "2025-03-13T17:15:43.465Z"
     }
   ],
   "orderItems": [
@@ -143,6 +151,13 @@
       "unitPrice": 1500,
       "id": 4,
       "orderId": 4
+    },
+    {
+      "productId": 2,
+      "quantity": 5,
+      "unitPrice": 1500,
+      "id": 5,
+      "orderId": 5
     }
   ],
   "contactMessages": [],

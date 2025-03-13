@@ -16,9 +16,23 @@ interface Product {
   tags: string[];
 }
 
+const Image = ({ src, alt, className }: { src: string; alt: string; className: string }) => {
+  const [error, setError] = useState(false);
+
+  return (
+    <img
+      src={src}
+      alt={alt}
+      className={className}
+      onError={() => setError(true)}
+      style={{ display: error ? 'none' : 'block' }}
+    />
+  );
+};
+
 export default function GalleryPage() {
   const [activeCategory, setActiveCategory] = useState<ProductCategory>('all');
-  
+
   const products: Product[] = [
     {
       id: 1,
@@ -27,7 +41,7 @@ export default function GalleryPage() {
       price: 1800,
       unitSize: "12 unid.",
       category: "sorrentinos",
-      imageUrl: "https://images.unsplash.com/photo-1587655424229-130916450ca4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=500&q=80",
+      imageUrl: "/images/sorrentinos-queso-jamon.jpg", //Updated image path
       tags: ["Favorito"]
     },
     {
@@ -37,7 +51,7 @@ export default function GalleryPage() {
       price: 1700,
       unitSize: "12 unid.",
       category: "sorrentinos",
-      imageUrl: "https://images.unsplash.com/photo-1622973536968-3ead9e780960?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=500&q=80",
+      imageUrl: "/images/sorrentinos-ricota-espinaca.jpg", //Updated image path
       tags: ["Vegetariano"]
     },
     {
@@ -47,7 +61,7 @@ export default function GalleryPage() {
       price: 1650,
       unitSize: "12 unid.",
       category: "sorrentinos",
-      imageUrl: "https://images.unsplash.com/photo-1679234780479-286f05cd2949?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=500&q=80",
+      imageUrl: "/images/sorrentinos-calabaza-queso.jpg", //Updated image path
       tags: ["Vegetariano"]
     },
     {
@@ -57,7 +71,7 @@ export default function GalleryPage() {
       price: 1900,
       unitSize: "24 unid.",
       category: "ravioles",
-      imageUrl: "https://images.unsplash.com/photo-1611270629569-8b357cb88da9?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=500&q=80",
+      imageUrl: "/images/ravioles-carne.jpg", //Updated image path
       tags: ["Clásico"]
     },
     {
@@ -67,7 +81,7 @@ export default function GalleryPage() {
       price: 2200,
       unitSize: "6 unid.",
       category: "canelones",
-      imageUrl: "https://images.unsplash.com/photo-1627308595171-d1b5d67129c4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=500&q=80",
+      imageUrl: "/images/canelones-verdura.jpg", //Updated image path
       tags: ["Vegetariano"]
     },
     {
@@ -77,7 +91,7 @@ export default function GalleryPage() {
       price: 950,
       unitSize: "500ml",
       category: "salsas",
-      imageUrl: "https://images.unsplash.com/photo-1598866594230-a7c12756260f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=500&q=80",
+      imageUrl: "/images/salsa-filetto.jpg", //Updated image path
       tags: ["Nuevo"]
     },
     {
@@ -87,7 +101,7 @@ export default function GalleryPage() {
       price: 1850,
       unitSize: "12 unid.",
       category: "sorrentinos",
-      imageUrl: "https://images.unsplash.com/photo-1551183053-bf91a1d81141?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=500&q=80",
+      imageUrl: "/images/sorrentinos-cuatro-quesos.jpg", //Updated image path
       tags: ["Vegetariano"]
     },
     {
@@ -97,7 +111,7 @@ export default function GalleryPage() {
       price: 1850,
       unitSize: "24 unid.",
       category: "ravioles",
-      imageUrl: "https://images.unsplash.com/photo-1551183053-7b91a7d629e8?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=500&q=80",
+      imageUrl: "/images/ravioles-ricota-nuez.jpg", //Updated image path
       tags: ["Vegetariano"]
     },
     {
@@ -107,7 +121,7 @@ export default function GalleryPage() {
       price: 2300,
       unitSize: "6 unid.",
       category: "canelones",
-      imageUrl: "https://images.unsplash.com/photo-1603133872878-684f208fb84b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=500&q=80",
+      imageUrl: "/images/canelones-pollo.jpg", //Updated image path
       tags: ["Favorito"]
     }
   ];
@@ -141,7 +155,7 @@ export default function GalleryPage() {
           <div className="flex justify-between h-16">
             <div className="flex items-center">
               <Link to="/" className="flex-shrink-0 flex items-center">
-                <Logo className="h-12 w-auto" />
+                <Logo className="h-12 w-auto" src="/images/logo.png" alt="Le Unique Logo" /> {/*Updated Logo path*/}
               </Link>
             </div>
             <div className="hidden md:ml-6 md:flex md:items-center md:space-x-6">
@@ -176,7 +190,7 @@ export default function GalleryPage() {
       {/* Gallery/Products Section */}
       <section className="bg-[#f2efe2] py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div 
+          <motion.div
             className="text-center mb-12"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -187,53 +201,53 @@ export default function GalleryPage() {
           </motion.div>
 
           {/* Categories */}
-          <motion.div 
+          <motion.div
             className="flex justify-center flex-wrap gap-3 mb-10"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
           >
-            <button 
+            <button
               onClick={() => setActiveCategory('all')}
-              className={`px-4 py-2 rounded-full ${activeCategory === 'all' 
-                ? 'text-white bg-[#e3a765] border border-[#e3a765]' 
-                : 'text-[#e3a765] bg-white border border-[#e3a765] hover:bg-[#e3a765] hover:text-white'} 
+              className={`px-4 py-2 rounded-full ${activeCategory === 'all'
+                ? 'text-white bg-[#e3a765] border border-[#e3a765]'
+                : 'text-[#e3a765] bg-white border border-[#e3a765] hover:bg-[#e3a765] hover:text-white'}
                 transition-all`}
             >
               Todos
             </button>
-            <button 
+            <button
               onClick={() => setActiveCategory('sorrentinos')}
-              className={`px-4 py-2 rounded-full ${activeCategory === 'sorrentinos' 
-                ? 'text-white bg-[#5d6d7c] border border-[#5d6d7c]' 
-                : 'text-[#5d6d7c] bg-white border border-[#5d6d7c] hover:bg-[#5d6d7c] hover:text-white'} 
+              className={`px-4 py-2 rounded-full ${activeCategory === 'sorrentinos'
+                ? 'text-white bg-[#5d6d7c] border border-[#5d6d7c]'
+                : 'text-[#5d6d7c] bg-white border border-[#5d6d7c] hover:bg-[#5d6d7c] hover:text-white'}
                 transition-all`}
             >
               Sorrentinos
             </button>
-            <button 
+            <button
               onClick={() => setActiveCategory('ravioles')}
-              className={`px-4 py-2 rounded-full ${activeCategory === 'ravioles' 
-                ? 'text-white bg-[#5d6d7c] border border-[#5d6d7c]' 
-                : 'text-[#5d6d7c] bg-white border border-[#5d6d7c] hover:bg-[#5d6d7c] hover:text-white'} 
+              className={`px-4 py-2 rounded-full ${activeCategory === 'ravioles'
+                ? 'text-white bg-[#5d6d7c] border border-[#5d6d7c]'
+                : 'text-[#5d6d7c] bg-white border border-[#5d6d7c] hover:bg-[#5d6d7c] hover:text-white'}
                 transition-all`}
             >
               Ravioles
             </button>
-            <button 
+            <button
               onClick={() => setActiveCategory('canelones')}
-              className={`px-4 py-2 rounded-full ${activeCategory === 'canelones' 
-                ? 'text-white bg-[#5d6d7c] border border-[#5d6d7c]' 
-                : 'text-[#5d6d7c] bg-white border border-[#5d6d7c] hover:bg-[#5d6d7c] hover:text-white'} 
+              className={`px-4 py-2 rounded-full ${activeCategory === 'canelones'
+                ? 'text-white bg-[#5d6d7c] border border-[#5d6d7c]'
+                : 'text-[#5d6d7c] bg-white border border-[#5d6d7c] hover:bg-[#5d6d7c] hover:text-white'}
                 transition-all`}
             >
               Canelones
             </button>
-            <button 
+            <button
               onClick={() => setActiveCategory('salsas')}
-              className={`px-4 py-2 rounded-full ${activeCategory === 'salsas' 
-                ? 'text-white bg-[#5d6d7c] border border-[#5d6d7c]' 
-                : 'text-[#5d6d7c] bg-white border border-[#5d6d7c] hover:bg-[#5d6d7c] hover:text-white'} 
+              className={`px-4 py-2 rounded-full ${activeCategory === 'salsas'
+                ? 'text-white bg-[#5d6d7c] border border-[#5d6d7c]'
+                : 'text-[#5d6d7c] bg-white border border-[#5d6d7c] hover:bg-[#5d6d7c] hover:text-white'}
                 transition-all`}
             >
               Salsas
@@ -243,7 +257,7 @@ export default function GalleryPage() {
           {/* Products Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredProducts.map((product, index) => (
-              <motion.div 
+              <motion.div
                 key={product.id}
                 className="bg-white rounded-lg shadow-md overflow-hidden transition-all duration-300 hover:-translate-y-2 hover:shadow-xl"
                 initial={{ opacity: 0, y: 20 }}
@@ -251,9 +265,9 @@ export default function GalleryPage() {
                 transition={{ duration: 0.5, delay: 0.1 + (index * 0.1) }}
               >
                 <div className="overflow-hidden h-48">
-                  <img 
-                    src={product.imageUrl} 
-                    alt={product.name} 
+                  <Image
+                    src={product.imageUrl}
+                    alt={product.name}
                     className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
                   />
                 </div>
@@ -269,7 +283,7 @@ export default function GalleryPage() {
                   <p className="text-[#5d6d7c] text-sm mb-4">{product.description}</p>
                   <div className="flex justify-between items-center">
                     <span className="font-semibold text-[#e3a765]">${product.price.toLocaleString()} x {product.unitSize}</span>
-                    <button 
+                    <button
                       onClick={handleContactClick}
                       className="px-3 py-1 bg-[#e3a765] text-white rounded-md text-sm hover:bg-opacity-90 transition-all"
                     >
@@ -288,7 +302,7 @@ export default function GalleryPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between gap-8">
             <div className="md:w-1/3">
-              <Logo className="h-16 mb-4 bg-white p-2 rounded" />
+              <Logo className="h-16 mb-4 bg-white p-2 rounded" src="/images/logo.png" alt="Le Unique Logo" /> {/*Updated Logo path*/}
               <p className="text-white/80 mb-4">Sorrentinos y pastas frescas congeladas, elaboradas con los mejores ingredientes y con todo el sabor de lo hecho en casa.</p>
               <div className="flex gap-4">
                 <a href="#" className="text-white hover:text-[#fdd000] transition-all">
@@ -308,7 +322,7 @@ export default function GalleryPage() {
                 </a>
               </div>
             </div>
-            
+
             <div>
               <h4 className="text-lg font-semibold mb-4 text-[#fdd000]">Enlaces rápidos</h4>
               <ul className="space-y-2">
@@ -318,7 +332,7 @@ export default function GalleryPage() {
                 <li><Link to="/contact" className="text-white/80 hover:text-white transition-all">Contacto</Link></li>
               </ul>
             </div>
-            
+
             <div>
               <h4 className="text-lg font-semibold mb-4 text-[#fdd000]">Productos</h4>
               <ul className="space-y-2">
@@ -328,7 +342,7 @@ export default function GalleryPage() {
                 <li><button onClick={() => setActiveCategory('salsas')} className="text-white/80 hover:text-white transition-all">Salsas</button></li>
               </ul>
             </div>
-            
+
             <div>
               <h4 className="text-lg font-semibold mb-4 text-[#fdd000]">Contacto</h4>
               <ul className="space-y-3">
@@ -354,7 +368,7 @@ export default function GalleryPage() {
               </ul>
             </div>
           </div>
-          
+
           <div className="mt-12 pt-8 border-t border-white/20 text-center">
             <p className="text-white/80">&copy; {new Date().getFullYear()} Le Unique. Todos los derechos reservados.</p>
           </div>
