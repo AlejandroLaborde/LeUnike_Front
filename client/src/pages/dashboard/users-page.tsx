@@ -62,6 +62,7 @@ import {
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
+import { useMemo } from "react";
 
 type UserRole = 'super_admin' | 'admin' | 'vendor';
 
@@ -120,12 +121,24 @@ export default function UsersPage() {
   });
 
   // Fetch users
-  const { data: users, isLoading } = useQuery({
-    queryKey: ['/api/users'],
+  const { data: users = [], isLoading, refetch } = useQuery({
+    queryKey: ['users'],
     queryFn: async () => {
-      const res = await apiRequest('GET', '/api/users');
-      return await res.json() as User[];
-    }
+      try {
+        const res = await apiRequest('GET', '/api/users');
+        if (!res.ok) {
+          throw new Error('Error al obtener usuarios: ' + res.statusText);
+        }
+        const data = await res.json();
+        console.log("Users data fetched:", data);
+        return data || [];
+      } catch (error) {
+        console.error("Error fetching users:", error);
+        return [];
+      }
+    },
+    refetchOnWindowFocus: true,
+    refetchInterval: 30000 // Refresh every 30 seconds
   });
 
   // Mutations
@@ -263,33 +276,26 @@ export default function UsersPage() {
     setIsDeleteDialogOpen(true);
   };
 
-  // Filter users
-  const filteredUsers = users
-    ? users
-        .filter(user => {
-          // Filter out current user (can't edit self)
-          if (user.id === user?.id) return false;
+  // Filter users  (Improved filtering logic based on the changes)
+  const filteredUsers = useMemo(() => {
+    if (!users || !Array.isArray(users)) return [];
 
-          // Apply search filter
-          const matchesSearch = 
-            user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            user.username.toLowerCase().includes(searchTerm.toLowerCase());
+    return users.filter(user => {
+      // Filter based on search and filter options
+      const matchesSearch = searchTerm === "" || 
+        user.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        user.username.toLowerCase().includes(searchTerm.toLowerCase());
 
-          // Apply status filter
-          const matchesStatus = 
-            filterStatus === 'all' ? true :
-            filterStatus === 'active' ? user.active :
-            !user.active;
+      const matchesStatus = filterStatus === "all" || 
+        (filterStatus === "active" && user.active) || 
+        (filterStatus === "inactive" && !user.active);
 
-          // Apply role filter
-          const matchesRole = 
-            filterRole === 'all' ? true :
-            filterRole === 'admin' ? user.role === 'admin' || user.role === 'super_admin' :
-            user.role === 'vendor';
+      const matchesRole = filterRole === "all" || 
+        (filterRole === user.role);
 
-          return matchesSearch && matchesStatus && matchesRole;
-        })
-    : [];
+      return matchesSearch && matchesStatus && matchesRole;
+    });
+  }, [users, searchTerm, filterStatus, filterRole]);
 
   // Helper function to get role label
   const getRoleLabel = (role: UserRole) => {
@@ -320,6 +326,18 @@ export default function UsersPage() {
       default: return <User className="mr-2 h-4 w-4" />;
     }
   };
+
+  // Mostrar un mensaje de carga si está cargando
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="flex flex-col items-center">
+          <div className="w-12 h-12 border-4 border-[#e3a765] border-t-transparent rounded-full animate-spin"></div>
+          <p className="mt-4 text-[#5d6d7c]">Cargando usuarios...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -400,15 +418,26 @@ export default function UsersPage() {
             <div className="flex justify-center items-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-[#e3a765]" />
             </div>
-          ) : filteredUsers.length === 0 ? (
-            <div className="text-center py-12">
-              <User className="h-12 w-12 text-[#5d6d7c] mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-black mb-2">No se encontraron usuarios</h3>
-              <p className="text-[#5d6d7c] max-w-md mx-auto">
-                {searchTerm || filterStatus !== 'all' || filterRole !== 'all'
-                  ? "No hay resultados para los filtros aplicados."
-                  : "No hay usuarios registrados en el sistema."}
+          ) : (filteredUsers.length === 0) ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <UserX className="h-12 w-12 text-[#5d6d7c]/50 mb-4" />
+              <h3 className="text-lg font-medium text-black mb-1">No se encontraron usuarios</h3>
+              <p className="text-[#5d6d7c] max-w-sm">
+                {searchTerm ? 
+                  `No hay usuarios que coincidan con "${searchTerm}".` : 
+                  'No hay usuarios registrados en el sistema.'}
               </p>
+              <Button 
+                onClick={() => {
+                  resetForm();
+                  setIsAddDialogOpen(true);
+                }}
+                variant="outline"
+                className="mt-4"
+              >
+                <UserPlus className="mr-2 h-4 w-4" />
+                Agregar usuario
+              </Button>
             </div>
           ) : (
             <div className="overflow-x-auto">

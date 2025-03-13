@@ -12,14 +12,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   try {
     const existingAdmin = await storage.getUserByUsername("Admin");
     if (!existingAdmin) {
-      await storage.createUser({
+      const adminUser = await storage.createUser({
         username: "Admin",
         password: "Admin", // Will be hashed in createUser
         name: "Super Administrador",
         role: "super_admin",
         active: true
       });
-      console.log("Default super admin user created");
+      console.log("Default super admin user created:", adminUser.id);
+    } else {
+      console.log("Admin user already exists:", existingAdmin.id);
     }
   } catch (error) {
     console.error("Error creating default admin user:", error);
@@ -54,11 +56,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/users", isAuthenticated, isAdmin, async (req, res, next) => {
     try {
       const users = await storage.getAllUsers();
-      console.log("Retrieved all users:", users.length); // Logging para depuración
-      res.json(users);
+      console.log("Retrieved all users:", users.length, users); // Logging para depuración
+      // Make sure we're returning a valid JSON array
+      return res.status(200).json(users || []);
     } catch (error) {
       console.error("Error getting all users:", error);
-      next(error);
+      return res.status(500).json({ message: "Error al obtener usuarios", error: (error as Error).message });
     }
   });
 

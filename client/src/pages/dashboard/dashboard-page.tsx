@@ -89,7 +89,7 @@ const PopularProducts = () => {
 export default function DashboardPage() {
   const { user } = useAuth();
   const { toast } = useToast();
-  
+
   // Order data (in a real app, this would come from an API)
   const { data: orders, isLoading } = useQuery({
     queryKey: ['/api/orders'],
@@ -160,7 +160,7 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         </motion.div>
-        
+
         {/* New Orders */}
         <motion.div 
           initial={{ y: 20, opacity: 0 }}
@@ -187,7 +187,7 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         </motion.div>
-        
+
         {/* New Clients */}
         <motion.div 
           initial={{ y: 20, opacity: 0 }}
@@ -215,7 +215,7 @@ export default function DashboardPage() {
           </Card>
         </motion.div>
       </div>
-      
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left column - Charts and Orders */}
         <div className="lg:col-span-2 space-y-6">
@@ -242,7 +242,7 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
           </motion.div>
-          
+
           {/* Recent Orders */}
           <motion.div
             initial={{ y: 20, opacity: 0 }}
@@ -280,7 +280,7 @@ export default function DashboardPage() {
                             <td className="px-4 py-3 whitespace-nowrap text-sm text-black">{order.id}</td>
                             <td className="px-4 py-3 whitespace-nowrap text-sm text-black">{order.client}</td>
                             <td className="px-4 py-3 whitespace-nowrap text-sm text-black">{order.vendor}</td>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm text-black">${order.amount.toLocaleString()}</td>
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-black">${typeof order.amount === 'number' ? order.amount.toString() : order.amount}</td>
                             <td className="px-4 py-3 whitespace-nowrap">
                               <span className={`px-2 py-1 text-xs rounded-full ${
                                 order.status === 'Entregado' ? 'bg-green-100 text-green-800' :
@@ -301,7 +301,7 @@ export default function DashboardPage() {
             </Card>
           </motion.div>
         </div>
-        
+
         {/* Right column - WhatsApp QR and Popular Products */}
         <div className="lg:col-span-1 space-y-6">
           {/* WhatsApp QR Code */}
@@ -336,7 +336,7 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
           </motion.div>
-          
+
           {/* Top Products */}
           <motion.div
             initial={{ y: 20, opacity: 0 }}

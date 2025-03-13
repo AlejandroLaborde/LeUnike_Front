@@ -1,0 +1,104 @@
+{
+  "users": [
+    {
+      "username": "Admin",
+      "password": "a3f594c4c652141cd014984ecc4ec4a33a39b198e9196b4acdbca7c282ae5540bb02389f8bb89554c67eec941579aeb72075ab5f540f8e04a621ddaa64951d5c.7035b408f70f89a700535a67a6eca2e0",
+      "name": "Super Administrador",
+      "role": "super_admin",
+      "active": true,
+      "id": 1,
+      "createdAt": "2025-03-13T03:42:10.537Z"
+    },
+    {
+      "username": "mel",
+      "password": "1586c610fafb51a7941994f3823bfbcfff3395ad231f117e208f2ac42e0e72d8535924cd7778da4406dbb9e107d8b93fe04c45ba3e3772711a2a694ade256384.a7d91a03086544172f42ce767bc39d94",
+      "name": "Melany",
+      "role": "vendor",
+      "active": true,
+      "id": 2,
+      "createdAt": "2025-03-13T03:49:44.959Z"
+    },
+    {
+      "username": "jorge",
+      "password": "7b65656bcce1eaf960842b0b895631c189c7af2ece13ddb438925623847f0b49a50e2b67589bc2d978fe0682c477013d3eb28ad98c416d3f7c447c536972747f.9f5f0f74d7581b571dcc5f19a67e7906",
+      "name": "jorge",
+      "role": "vendor",
+      "active": true,
+      "id": 3,
+      "createdAt": "2025-03-13T04:55:57.584Z"
+    },
+    {
+      "username": "aaa",
+      "password": "b1db1ef467647321e195b97ff219f2aaa328b5d2036798113f8ed2e1cc3ed39f2c1d3c5ea1bb3018faaf16edaddea4a72a0bdc2d7fc62b70db68de2b52cd4e4a.5a90989ed513114df4095fa8218ce973",
+      "name": "asdasd",
+      "role": "vendor",
+      "active": true,
+      "id": 4,
+      "createdAt": "2025-03-13T05:02:00.379Z"
+    }
+  ],
+  "products": [
+    {
+      "name": "Ravioles de ricota",
+      "description": "Altos rabiolitos",
+      "price": 1500,
+      "category": "ravioles",
+      "imageUrl": "https://cuk-it.com/wp-content/uploads/2020/07/ravioles-hamon-queso.webp",
+      "isVegetarian": true,
+      "isFeatured": true,
+      "active": true,
+      "unitSize": "12",
+      "stock": 20,
+      "id": 1,
+      "createdAt": "2025-03-13T03:49:22.821Z"
+    }
+  ],
+  "clients": [
+    {
+      "name": "Cristian",
+      "email": "elmail@gmail.com",
+      "phone": "123456789",
+      "address": "direccion 123",
+      "vendorId": 2,
+      "id": 1,
+      "createdAt": "2025-03-13T03:50:47.625Z"
+    }
+  ],
+  "chats": [],
+  "orders": [
+    {
+      "clientId": 1,
+      "vendorId": 1,
+      "totalAmount": 5445,
+      "status": "canceled",
+      "id": 1,
+      "createdAt": "2025-03-13T03:51:01.988Z"
+    },
+    {
+      "clientId": 1,
+      "vendorId": 2,
+      "totalAmount": 9075,
+      "status": "pending",
+      "id": 2,
+      "createdAt": "2025-03-13T03:56:54.427Z"
+    }
+  ],
+  "orderItems": [
+    {
+      "productId": 1,
+      "quantity": 3,
+      "unitPrice": 1500,
+      "id": 1,
+      "orderId": 1
+    },
+    {
+      "productId": 1,
+      "quantity": 5,
+      "unitPrice": 1500,
+      "id": 2,
+      "orderId": 2
+    }
+  ],
+  "contactMessages": [],
+  "newsletterSubscriptions": []
+}

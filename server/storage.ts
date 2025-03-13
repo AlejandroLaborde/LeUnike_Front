@@ -9,9 +9,19 @@ import session from "express-session";
 import createMemoryStore from "memorystore";
 import { scrypt, randomBytes } from "crypto";
 import { promisify } from "util";
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const scryptAsync = promisify(scrypt);
 const MemoryStore = createMemoryStore(session);
+
+// Path to the data file
+const DATA_FILE = path.join(__dirname, 'data.json');
 
 // modify the interface with any CRUD methods
 // you might need
@@ -101,8 +111,114 @@ export class MemStorage implements IStorage {
       checkPeriod: 86400000, // prune expired entries every 24h
     });
     
-    // Initialize with sample data
-    this.initializeSampleData();
+    // Load data from file if it exists
+    this.loadDataFromFile();
+  }
+  
+  // Load data from JSON file
+  private loadDataFromFile() {
+    try {
+      if (fs.existsSync(DATA_FILE)) {
+        const data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+        
+        // Load users
+        if (data.users && Array.isArray(data.users)) {
+          data.users.forEach(user => {
+            this.usersMap.set(user.id, user);
+            this.userIdCounter = Math.max(this.userIdCounter, user.id + 1);
+          });
+        }
+        
+        // Load products
+        if (data.products && Array.isArray(data.products)) {
+          data.products.forEach(product => {
+            this.productsMap.set(product.id, product);
+            this.productIdCounter = Math.max(this.productIdCounter, product.id + 1);
+          });
+        }
+        
+        // Load clients
+        if (data.clients && Array.isArray(data.clients)) {
+          data.clients.forEach(client => {
+            this.clientsMap.set(client.id, client);
+            this.clientIdCounter = Math.max(this.clientIdCounter, client.id + 1);
+          });
+        }
+        
+        // Load chats
+        if (data.chats && Array.isArray(data.chats)) {
+          data.chats.forEach(chat => {
+            this.chatsMap.set(chat.id, chat);
+            this.chatIdCounter = Math.max(this.chatIdCounter, chat.id + 1);
+          });
+        }
+        
+        // Load orders
+        if (data.orders && Array.isArray(data.orders)) {
+          data.orders.forEach(order => {
+            this.ordersMap.set(order.id, order);
+            this.orderIdCounter = Math.max(this.orderIdCounter, order.id + 1);
+          });
+        }
+        
+        // Load order items
+        if (data.orderItems && Array.isArray(data.orderItems)) {
+          data.orderItems.forEach(item => {
+            this.orderItemsMap.set(item.id, item);
+            this.orderItemIdCounter = Math.max(this.orderItemIdCounter, item.id + 1);
+          });
+        }
+        
+        // Load contact messages
+        if (data.contactMessages && Array.isArray(data.contactMessages)) {
+          data.contactMessages.forEach(message => {
+            this.contactMessagesMap.set(message.id, message);
+            this.contactMessageIdCounter = Math.max(this.contactMessageIdCounter, message.id + 1);
+          });
+        }
+        
+        // Load newsletter subscriptions
+        if (data.newsletterSubscriptions && Array.isArray(data.newsletterSubscriptions)) {
+          data.newsletterSubscriptions.forEach(subscription => {
+            this.newsletterSubscriptionsMap.set(subscription.id, subscription);
+            this.newsletterSubscriptionIdCounter = Math.max(
+              this.newsletterSubscriptionIdCounter, subscription.id + 1
+            );
+          });
+        }
+        
+        console.log("Data loaded successfully from file");
+      } else {
+        // If file doesn't exist, initialize with sample data
+        this.initializeSampleData();
+        this.saveDataToFile(); // Save initial data
+      }
+    } catch (error) {
+      console.error("Error loading data from file:", error);
+      // Initialize with sample data if there's an error
+      this.initializeSampleData();
+    }
+  }
+  
+  // Save data to JSON file
+  private saveDataToFile() {
+    try {
+      const data = {
+        users: Array.from(this.usersMap.values()),
+        products: Array.from(this.productsMap.values()),
+        clients: Array.from(this.clientsMap.values()),
+        chats: Array.from(this.chatsMap.values()),
+        orders: Array.from(this.ordersMap.values()),
+        orderItems: Array.from(this.orderItemsMap.values()),
+        contactMessages: Array.from(this.contactMessagesMap.values()),
+        newsletterSubscriptions: Array.from(this.newsletterSubscriptionsMap.values())
+      };
+      
+      fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
+      console.log("Data saved successfully to file");
+    } catch (error) {
+      console.error("Error saving data to file:", error);
+    }
   }
 
   // Private helper method to hash passwords
@@ -114,6 +230,56 @@ export class MemStorage implements IStorage {
 
   // Initialize sample data for development
   private async initializeSampleData() {
+    // Create sample users
+    const userSamples: InsertUser[] = [
+      {
+        username: "Admin",
+        password: "Admin",
+        name: "Super Administrador",
+        role: "super_admin",
+        active: true
+      },
+      {
+        username: "admin_pasta",
+        password: "password123",
+        name: "Administrador Pastas",
+        role: "admin",
+        active: true
+      },
+      {
+        username: "vendor1",
+        password: "password123",
+        name: "Laura Méndez",
+        role: "vendor",
+        active: true
+      },
+      {
+        username: "vendor2",
+        password: "password123",
+        name: "Jorge Pérez",
+        role: "vendor",
+        active: true
+      },
+      {
+        username: "vendor3",
+        password: "password123",
+        name: "María García",
+        role: "vendor",
+        active: true
+      },
+      {
+        username: "inactive_vendor",
+        password: "password123",
+        name: "Diego Martínez",
+        role: "vendor",
+        active: false
+      }
+    ];
+
+    for (const user of userSamples) {
+      await this.createUser(user);
+    }
+    
     // Create sample products
     const productSamples: InsertProduct[] = [
       {
@@ -125,7 +291,8 @@ export class MemStorage implements IStorage {
         isVegetarian: false,
         isFeatured: true,
         active: true,
-        unitSize: "12 unid."
+        unitSize: "12 unid.",
+        stock: 100
       },
       {
         name: "Sorrentinos de Ricota y Espinaca",
@@ -136,7 +303,8 @@ export class MemStorage implements IStorage {
         isVegetarian: true,
         isFeatured: false,
         active: true,
-        unitSize: "12 unid."
+        unitSize: "12 unid.",
+        stock: 80
       },
       {
         name: "Ravioles de Carne",
@@ -147,12 +315,42 @@ export class MemStorage implements IStorage {
         isVegetarian: false,
         isFeatured: false,
         active: true,
-        unitSize: "24 unid."
+        unitSize: "24 unid.",
+        stock: 120
       }
     ];
 
     for (const product of productSamples) {
       await this.createProduct(product);
+    }
+    
+    // Create sample clients
+    const clientSamples: InsertClient[] = [
+      {
+        name: "Martín Gómez",
+        email: "martin@example.com",
+        phone: "11-2345-6789",
+        address: "Av. Corrientes 1234, CABA",
+        vendorId: 3 // Laura Méndez
+      },
+      {
+        name: "Carolina Sánchez",
+        email: "carolina@example.com",
+        phone: "11-5678-1234",
+        address: "Av. Santa Fe 567, CABA",
+        vendorId: 4 // Jorge Pérez
+      },
+      {
+        name: "Roberto Álvarez",
+        email: "roberto@example.com",
+        phone: "11-8765-4321",
+        address: "Av. Cabildo 890, CABA",
+        vendorId: 3 // Laura Méndez
+      }
+    ];
+    
+    for (const client of clientSamples) {
+      await this.createClient(client);
     }
   }
 
@@ -185,6 +383,7 @@ export class MemStorage implements IStorage {
     };
     
     this.usersMap.set(id, user);
+    this.saveDataToFile(); // Save changes
     return user;
   }
 
@@ -203,6 +402,7 @@ export class MemStorage implements IStorage {
     };
     
     this.usersMap.set(id, updatedUser);
+    this.saveDataToFile(); // Save changes
     return updatedUser;
   }
 
@@ -230,6 +430,7 @@ export class MemStorage implements IStorage {
     };
     
     this.productsMap.set(id, newProduct);
+    this.saveDataToFile(); // Save changes
     return newProduct;
   }
 
@@ -243,6 +444,7 @@ export class MemStorage implements IStorage {
     };
     
     this.productsMap.set(id, updatedProduct);
+    this.saveDataToFile(); // Save changes
     return updatedProduct;
   }
 
@@ -272,6 +474,7 @@ export class MemStorage implements IStorage {
     };
     
     this.clientsMap.set(id, newClient);
+    this.saveDataToFile(); // Save changes
     return newClient;
   }
 
@@ -285,6 +488,7 @@ export class MemStorage implements IStorage {
     };
     
     this.clientsMap.set(id, updatedClient);
+    this.saveDataToFile(); // Save changes
     return updatedClient;
   }
 
@@ -310,6 +514,7 @@ export class MemStorage implements IStorage {
     };
     
     this.chatsMap.set(id, newChat);
+    this.saveDataToFile(); // Save changes
     return newChat;
   }
 
@@ -339,6 +544,7 @@ export class MemStorage implements IStorage {
     };
     
     this.ordersMap.set(id, newOrder);
+    this.saveDataToFile(); // Save changes
     return newOrder;
   }
 
@@ -352,6 +558,7 @@ export class MemStorage implements IStorage {
     };
     
     this.ordersMap.set(id, updatedOrder);
+    this.saveDataToFile(); // Save changes
     return updatedOrder;
   }
 
@@ -371,6 +578,7 @@ export class MemStorage implements IStorage {
       this.orderItemsMap.set(id, newItem);
     }
     
+    this.saveDataToFile(); // Save changes
     return newOrder;
   }
 
@@ -386,6 +594,7 @@ export class MemStorage implements IStorage {
     };
     
     this.contactMessagesMap.set(id, newMessage);
+    this.saveDataToFile(); // Save changes
     return newMessage;
   }
 
@@ -401,6 +610,7 @@ export class MemStorage implements IStorage {
     };
     
     this.newsletterSubscriptionsMap.set(id, newSubscription);
+    this.saveDataToFile(); // Save changes
     return newSubscription;
   }
 }
