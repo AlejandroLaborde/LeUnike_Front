@@ -325,7 +325,14 @@ export default function OrdersPage() {
 
   // Helper function to format date
   const formatOrderDate = (dateString: string) => {
-    return format(new Date(dateString), 'dd/MM/yyyy', { locale: es });
+    try {
+      if (!dateString) return 'Fecha no disponible';
+      const date = new Date(dateString);
+      return isNaN(date.getTime()) ? 'Fecha inválida' : format(date, 'dd/MM/yyyy', { locale: es });
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Fecha inválida';
+    }
   };
 
   // Helper function to get status badge styles
