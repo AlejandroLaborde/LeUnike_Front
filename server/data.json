@@ -19,66 +19,6 @@
       "createdAt": "2025-03-13T03:49:44.959Z"
     },
     {
-      "username": "jorge",
-      "password": "7b65656bcce1eaf960842b0b895631c189c7af2ece13ddb438925623847f0b49a50e2b67589bc2d978fe0682c477013d3eb28ad98c416d3f7c447c536972747f.9f5f0f74d7581b571dcc5f19a67e7906",
-      "name": "jorge",
-      "role": "vendor",
-      "active": true,
-      "id": 3,
-      "createdAt": "2025-03-13T04:55:57.584Z"
-    },
-    {
-      "username": "aaa",
-      "password": "b1db1ef467647321e195b97ff219f2aaa328b5d2036798113f8ed2e1cc3ed39f2c1d3c5ea1bb3018faaf16edaddea4a72a0bdc2d7fc62b70db68de2b52cd4e4a.5a90989ed513114df4095fa8218ce973",
-      "name": "asdasd",
-      "role": "vendor",
-      "active": false,
-      "id": 4,
-      "createdAt": "2025-03-13T05:02:00.379Z"
-    },
-    {
-      "username": "UnAdmin",
-      "password": "6b67ba2920ed761ddb06b08566461c82617545881f2f89addb3c1e5feee67766178c563187cb5b8d5d3b4ca37d5d7878a5415ac5f7c9dbed012922185deeec14.492eb041e7476c5376a6bb089836c384",
-      "name": "Soy un admin",
-      "email": "admin@gmail.com",
-      "phone": "",
-      "role": "admin",
-      "active": true,
-      "id": 5,
-      "createdAt": "2025-03-13T15:16:03.814Z"
-    },
-    {
-      "username": "aaaaaaa",
-      "password": "d28b5782aabac0b75a1b08007f9831ff67808f9acada0d89e852a9dca1f5345b8752aa75a982e2e4d11889528608de29a3467dbd49a552a3fdd7bf5cb4158358.633bc513195a6bcf2e0bd597cfebaff2",
-      "name": "aaaaaaaaa",
-      "email": "aaaaaaaaa@gfasd.co",
-      "phone": "",
-      "role": "super_admin",
-      "active": false,
-      "id": 6,
-      "createdAt": "2025-03-13T15:17:59.300Z"
-    },
-    {
-      "username": "asdasd",
-      "password": "737f7792292ef8c00de2675fb147103d9500f4d8341e504d132ec59039286744b0c3649fb18aa3876d8099d4cef27a59ffdcb4c7e277544f6d33c4bd4802c1e3.61e51d5f93b4520d8158fc1a313d8f06",
-      "name": "asdas",
-      "role": "admin",
-      "active": true,
-      "id": 7,
-      "createdAt": "2025-03-13T15:19:09.434Z"
-    },
-    {
-      "username": "asdasdasd",
-      "password": "ea45ded08defd1b43767da2e4777d7bb588bfe6556edd882934ef006f01d88e261ed0ac35e20977eeaf67730f9f38cefaf25657dee843047b4bce7cbc7cba9da.6fafed6268a0c5afdf78b29b952103a5",
-      "name": "asdasdasd",
-      "email": "asdasdasd@gasd.co",
-      "phone": "",
-      "role": "vendor",
-      "active": false,
-      "id": 8,
-      "createdAt": "2025-03-13T15:19:43.225Z"
-    },
-    {
       "username": "Pepe",
       "password": "98567daa5188fc7571c9588eef561d07c409394c8a5573feb38e54d93c1920b6b06c28c9d2cd10e3260007c5e652fac0fb08ab777397f0c33ecc8f21e35f32d8.507b3fa40756bbefdfa8daae7be6783f",
       "name": "Pepe",
@@ -90,48 +30,13 @@
       "createdAt": "2025-03-13T15:27:05.312Z"
     },
     {
-      "username": "iiiiii",
-      "password": "0d42e72293a89bfb6649d8343bf86a6797d83e71b27c0e0ea7c9dc804d548937ccc58a7a0edf2fea90176d5b6f7da639de736175e6be767b7a4398b9714d1cbf.c27241fa661b4f1374bf19aade92262c",
-      "name": "intento de super admin",
-      "email": "asdasd@gm.co",
-      "phone": "",
-      "role": "super_admin",
+      "username": "Cristianadmin",
+      "password": "41f8894c9e811aea4ba938e00727cce69d9c81e185c6f78604fb3eb0cb05cc52d782051050ee4babe7f39e9811c76766d9c198dca0e25c138543c5e77ac2dc29.654b82105f7015c145ed76b22bbfcbf0",
+      "name": "cristian celano pero admin",
+      "role": "vendor",
       "active": true,
       "id": 10,
-      "createdAt": "2025-03-13T15:28:18.499Z"
-    },
-    {
-      "username": "asdf",
-      "password": "a02b17f04d4e308d87709c7f8f6d57f2d5f9b8ab717fc1b798ca25b5ff22348f32e0dd5abb8538bcf8db1d26f945d2390d606f04d063de1a7a2bf364541e12ee.dc82d8bca656d9d108b1d5d7bf93e642",
-      "name": "asdf",
-      "email": "asasdfdf@go.com",
-      "phone": "",
-      "role": "vendor",
-      "active": false,
-      "id": 11,
-      "createdAt": "2025-03-13T15:37:27.145Z"
-    },
-    {
-      "username": "asdfasdf",
-      "password": "b9d2edf2f48bb273ac2d4c597ae28fd4765f124ee607f4d20d005b33cc51b4f6bdb8950703a610d9aea04f697cf5d39a9aa840d1a88900a168762eced9651ff9.b45da6f8b6431b1dc01d3aca8054369b",
-      "name": "asdfasdf",
-      "email": "asdf@g.co",
-      "phone": "",
-      "role": "vendor",
-      "active": true,
-      "id": 12,
-      "createdAt": "2025-03-13T15:41:11.356Z"
-    },
-    {
-      "username": "NombreDeUsuario",
-      "password": "12fc8cba267867a215863e2cc4758aa1f2e3bb2e57cee3181805a6ab1cd9d8e15c9fa0764ea610a0f0ada59fdfd585907b4650f61689598a392f7219775e70da.5ba951047fe5f144a4ded507f77f0918",
-      "name": "NombreCompleto",
-      "email": "correo@gmail.com",
-      "phone": "123456789",
-      "role": "vendor",
-      "active": true,
-      "id": 13,
-      "createdAt": "2025-03-13T15:45:14.542Z"
+      "createdAt": "2025-03-13T17:15:25.399Z"
     }
   ],
   "products": [

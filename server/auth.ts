@@ -23,16 +23,29 @@ async function hashPassword(password: string) {
 
 async function comparePasswords(supplied: string, stored: string) {
   try {
-    const [hashed, salt] = stored.split(".");
-    if (!hashed || !salt) {
-      console.error("Formato de password incorrecto:", stored);
+    // Validar formato de contraseña almacenada
+    const parts = stored.split(".");
+    if (parts.length !== 2) {
+      console.error("Formato de contraseña incorrecto");
       return false;
     }
+    
+    const [hashed, salt] = parts;
+    if (!hashed || !salt) {
+      console.error("Formato de contraseña incorrecto: falta hash o salt");
+      return false;
+    }
+    
+    // Convertir hash almacenado a Buffer
     const hashedBuf = Buffer.from(hashed, "hex");
+    
+    // Generar hash de la contraseña proporcionada con la misma sal
     const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
+    
+    // Comparar los dos hashes de manera segura contra ataques de tiempo
     return timingSafeEqual(hashedBuf, suppliedBuf);
   } catch (error) {
-    console.error("Error comparing passwords:", error);
+    console.error("Error al comparar contraseñas:", error);
     return false;
   }
 }
@@ -44,7 +57,10 @@ export function setupAuth(app: Express) {
     saveUninitialized: false,
     store: storage.sessionStore,
     cookie: {
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 1 semana
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict'
     }
   };
 
@@ -57,14 +73,21 @@ export function setupAuth(app: Express) {
     new LocalStrategy(async (username, password, done) => {
       try {
         const user = await storage.getUserByUsername(username);
-        if (!user || !(await comparePasswords(password, user.password))) {
-          return done(null, false);
-        } else if (!user.active) {
-          return done(null, false);
-        } else {
-          return done(null, user);
+        if (!user) {
+          return done(null, false, { message: "Usuario no encontrado" });
         }
+        
+        if (!(await comparePasswords(password, user.password))) {
+          return done(null, false, { message: "Contraseña incorrecta" });
+        }
+        
+        if (!user.active) {
+          return done(null, false, { message: "Usuario inactivo. Contacta al administrador." });
+        }
+        
+        return done(null, user);
       } catch (error) {
+        console.error("Error en autenticación:", error);
         return done(error);
       }
     }),
@@ -95,17 +118,37 @@ export function setupAuth(app: Express) {
         role: req.body.role || "vendor", // Default to vendor if not specified
       });
 
-      req.login(user, (err) => {
-        if (err) return next(err);
-        return res.status(201).json(user);
-      });
+      // No iniciar sesión automáticamente al registrar desde el dashboard
+      return res.status(201).json(user);
     } catch (error) {
       next(error);
     }
   });
 
-  app.post("/api/login", passport.authenticate("local"), (req, res) => {
-    res.status(200).json(req.user);
+  app.post("/api/login", (req, res, next) => {
+    passport.authenticate("local", (err, user, info) => {
+      if (err) {
+        return next(err);
+      }
+      
+      if (!user) {
+        return res.status(401).json({ 
+          message: info?.message || "Credenciales inválidas"
+        });
+      }
+      
+      req.login(user, (loginErr) => {
+        if (loginErr) {
+          return next(loginErr);
+        }
+        
+        // Eliminar la contraseña antes de enviar la respuesta
+        const userResponse = { ...user };
+        delete userResponse.password;
+        
+        return res.status(200).json(userResponse);
+      });
+    })(req, res, next);
   });
 
   app.post("/api/logout", (req, res, next) => {

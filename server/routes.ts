@@ -92,12 +92,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/users/:id", isAuthenticated, isSuperAdmin, async (req, res, next) => {
     try {
       const userId = parseInt(req.params.id);
-      // Set user as inactive instead of deleting
-      const deactivated = await storage.updateUser(userId, { active: false });
-      if (!deactivated) {
+      const deleted = await storage.deleteUser(userId); // Assuming deleteUser function exists in storage
+      if (!deleted) {
         return res.status(404).json({ message: "Usuario no encontrado" });
       }
-      res.json({ message: "Usuario desactivado correctamente" });
+      res.status(200).json({ message: "Usuario eliminado correctamente" });
     } catch (error) {
       next(error);
     }
@@ -363,27 +362,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/register", async (req, res, next) => {
-    try {
-      const existingUser = await storage.getUserByUsername(req.body.username);
-      if (existingUser) {
-        return res.status(400).json({ message: "El nombre de usuario ya existe" });
-      }
-
-      const hashedPassword = await hashPassword(req.body.password);
-      const user = await storage.createUser({
-        ...req.body,
-        password: hashedPassword,
-        active: true,
-        role: req.body.role || "vendor", // Default to vendor if not specified
-      });
-
-      // No iniciar sesión automáticamente al registrar un usuario desde el dashboard
-      return res.status(201).json(user);
-    } catch (error) {
-      next(error);
-    }
-  });
+  // Nota: La ruta /api/register ya está definida en setupAuth
 
   // Create HTTP server
   const httpServer = createServer(app);
