@@ -514,7 +514,7 @@ export default function OrdersPage() {
                             </div>
                           </TableCell>
                           <TableCell className="font-medium text-[#e3a765]">
-                            ${order.totalAmount.toLocaleString()}
+                            ${order.totalAmount?.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
                           </TableCell>
                           <TableCell>
                             <Badge variant="outline" className={statusInfo.className}>
@@ -638,7 +638,7 @@ export default function OrdersPage() {
                   </div>
                   <div>
                     <h3 className="text-sm font-medium text-[#5d6d7c]">Total</h3>
-                    <p className="text-[#e3a765] font-bold text-lg">${viewingOrder.totalAmount.toLocaleString()}</p>
+                    <p className="text-[#e3a765] font-bold text-lg">${viewingOrder.totalAmount?.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}</p>
                   </div>
                 </div>
               </div>
@@ -693,7 +693,7 @@ export default function OrdersPage() {
                     <div className="text-right">
                       <p className="text-sm text-[#5d6d7c]">Subtotal: $7,400</p>
                       <p className="text-sm text-[#5d6d7c]">IVA (21%): $1,554</p>
-                      <p className="font-bold text-black mt-1">Total: ${viewingOrder.totalAmount.toLocaleString()}</p>
+                      <p className="font-bold text-black mt-1">Total: ${viewingOrder.totalAmount?.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}</p>
                     </div>
                   </div>
                 </div>
