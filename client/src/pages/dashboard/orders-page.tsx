@@ -493,6 +493,7 @@ export default function OrdersPage() {
                 </Button>
               </div>
             ) : (
+              <> {/* Added <></> to wrap the Table and Button */}
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
@@ -605,6 +606,14 @@ export default function OrdersPage() {
                   </TableBody>
                 </Table>
               </div>
+              <Button 
+                className="bg-[#e3a765] hover:bg-[#e3a765]/90 mt-4 w-full"
+                onClick={() => setIsNewOrderOpen(true)}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Crear Pedido
+              </Button>
+              </>
             )}
           </Tabs>
         </CardContent>
@@ -854,7 +863,7 @@ export default function OrdersPage() {
                     </SelectItem>
                   ))}
                 </SelectContent>
-              </Select>
+                </Select>
             </div>
 
             {/* Products selection */}
