@@ -872,3 +872,574 @@ export default function ProductsPage() {
     </div>
   );
 }
+import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useToast } from "@/hooks/use-toast";
+import { Loader2, Package, PlusCircle, Search, Trash } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useAuth } from "@/hooks/use-auth";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+// Definir la interfaz para un producto
+interface Product {
+  id: number;
+  name: string;
+  description: string;
+  price: number;
+  category: string;
+  imageUrl?: string;
+  isVegetarian: boolean;
+  isFeatured: boolean;
+  active: boolean;
+  unitSize: string;
+  stock: number;
+}
+
+interface NewProductFormData {
+  name: string;
+  description: string;
+  price: string;
+  category: string;
+  unitSize: string;
+  isVegetarian: boolean;
+  isFeatured: boolean;
+  stock: string;
+}
+
+export default function ProductsPage() {
+  const { toast } = useToast();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingProductId, setEditingProductId] = useState<number | null>(null);
+  const [formData, setFormData] = useState<NewProductFormData>({
+    name: "",
+    description: "",
+    price: "",
+    category: "",
+    unitSize: "",
+    isVegetarian: false,
+    isFeatured: false,
+    stock: "0"
+  });
+  const [tabValue, setTabValue] = useState("active");
+
+  // Cargar productos
+  const { data: products = [], isLoading } = useQuery<Product[]>({
+    queryKey: ["products"],
+    queryFn: async () => {
+      const response = await fetch("/api/products");
+      if (!response.ok) {
+        throw new Error("Error al cargar productos");
+      }
+      return response.json();
+    }
+  });
+
+  // Crear un nuevo producto
+  const createProduct = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await fetch("/api/products", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Error al crear el producto");
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      toast({
+        title: "Producto creado",
+        description: "El producto ha sido creado exitosamente",
+      });
+      resetForm();
+      setIsDialogOpen(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Actualizar un producto existente
+  const updateProduct = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+      const response = await fetch(`/api/products/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Error al actualizar el producto");
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      toast({
+        title: "Producto actualizado",
+        description: "El producto ha sido actualizado exitosamente",
+      });
+      resetForm();
+      setIsDialogOpen(false);
+      setEditingProductId(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Desactivar un producto
+  const deactivateProduct = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await fetch(`/api/products/${id}`, {
+        method: "DELETE",
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Error al desactivar el producto");
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      toast({
+        title: "Producto desactivado",
+        description: "El producto ha sido desactivado exitosamente",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Filtrar productos
+  const filteredProducts = products.filter(product => {
+    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                        product.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = (tabValue === "active" && product.active) || 
+                          (tabValue === "inactive" && !product.active);
+    return matchesSearch && matchesStatus;
+  });
+
+  // Abrir diálogo para editar un producto existente
+  const openEditDialog = (product: Product) => {
+    setFormData({
+      name: product.name,
+      description: product.description,
+      price: product.price.toString(),
+      category: product.category,
+      unitSize: product.unitSize,
+      isVegetarian: product.isVegetarian,
+      isFeatured: product.isFeatured,
+      stock: product.stock.toString()
+    });
+    setEditingProductId(product.id);
+    setIsDialogOpen(true);
+  };
+
+  // Abrir diálogo para crear un nuevo producto
+  const openNewDialog = () => {
+    resetForm();
+    setEditingProductId(null);
+    setIsDialogOpen(true);
+  };
+
+  // Resetear el formulario
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      description: "",
+      price: "",
+      category: "",
+      unitSize: "",
+      isVegetarian: false,
+      isFeatured: false,
+      stock: "0"
+    });
+  };
+
+  // Manejar envío del formulario
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validación básica
+    if (!formData.name || !formData.description || !formData.price || !formData.unitSize) {
+      toast({
+        title: "Error",
+        description: "Por favor completa todos los campos requeridos",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const productData = {
+      name: formData.name,
+      description: formData.description,
+      price: parseInt(formData.price),
+      category: formData.category || "General",
+      unitSize: formData.unitSize,
+      isVegetarian: formData.isVegetarian,
+      isFeatured: formData.isFeatured,
+      stock: parseInt(formData.stock) || 0
+    };
+    
+    if (editingProductId) {
+      updateProduct.mutate({ id: editingProductId, data: productData });
+    } else {
+      createProduct.mutate(productData);
+    }
+  };
+
+  // Manejar cambios en los campos del formulario
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  // Manejar cambios en checkboxes
+  const handleCheckboxChange = (name: keyof NewProductFormData, checked: boolean) => {
+    setFormData(prev => ({ ...prev, [name]: checked }));
+  };
+
+  // Manejar selección de categoría
+  const handleCategoryChange = (value: string) => {
+    setFormData(prev => ({ ...prev, category: value }));
+  };
+
+  // Verificar si el usuario tiene permisos de administrador
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
+
+  if (!isAdmin) {
+    return (
+      <div className="py-10 px-4 text-center">
+        <Package className="h-12 w-12 text-[#5d6d7c] mx-auto mb-4" />
+        <h2 className="text-2xl font-semibold text-black mb-3">Acceso restringido</h2>
+        <p className="text-[#5d6d7c] max-w-md mx-auto mb-6">
+          No tienes permisos para acceder a la gestión de productos.
+          Por favor, contacta con un administrador si necesitas realizar cambios.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-black">Productos</h1>
+          <p className="text-[#5d6d7c]">Gestiona los productos disponibles para la venta</p>
+        </div>
+        <Button 
+          className="mt-4 md:mt-0 bg-[#e3a765] hover:bg-[#e3a765]/90"
+          onClick={openNewDialog}
+        >
+          <PlusCircle className="h-4 w-4 mr-2" />
+          Nuevo producto
+        </Button>
+      </div>
+
+      <Card>
+        <CardHeader className="pb-2">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
+            <CardTitle>Listado de productos</CardTitle>
+            <div className="w-full md:w-auto mt-4 md:mt-0 flex items-center">
+              <div className="relative w-full md:w-64">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#5d6d7c]" />
+                <Input
+                  className="pl-9"
+                  placeholder="Buscar productos..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+          <CardDescription>
+            <Tabs defaultValue="active" className="mt-2" onValueChange={setTabValue}>
+              <TabsList>
+                <TabsTrigger value="active">Activos</TabsTrigger>
+                <TabsTrigger value="inactive">Inactivos</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="flex justify-center items-center py-10">
+              <Loader2 className="h-8 w-8 animate-spin text-[#e3a765]" />
+            </div>
+          ) : filteredProducts.length === 0 ? (
+            <div className="text-center py-10">
+              <Package className="h-12 w-12 text-[#5d6d7c] mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-black">No hay productos</h3>
+              <p className="text-[#5d6d7c] mt-1">
+                {searchTerm ? "No se encontraron productos con tu búsqueda" : "No hay productos en esta categoría"}
+              </p>
+              {!searchTerm && (
+                <Button 
+                  className="mt-4 bg-[#e3a765] hover:bg-[#e3a765]/90"
+                  onClick={openNewDialog}
+                >
+                  <PlusCircle className="h-4 w-4 mr-2" />
+                  Añadir producto
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-[#5d6d7c] uppercase tracking-wider">Producto</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-[#5d6d7c] uppercase tracking-wider">Precio</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-[#5d6d7c] uppercase tracking-wider">Categoría</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-[#5d6d7c] uppercase tracking-wider">Stock</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-[#5d6d7c] uppercase tracking-wider">Características</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-[#5d6d7c] uppercase tracking-wider">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {filteredProducts.map((product) => (
+                    <tr key={product.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-4">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-10 w-10 rounded-full bg-[#e3a765]/10 flex items-center justify-center">
+                            <Package className="h-5 w-5 text-[#e3a765]" />
+                          </div>
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-black">{product.name}</div>
+                            <div className="text-sm text-[#5d6d7c]">{product.unitSize}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="text-sm text-black">${product.price.toLocaleString()}</div>
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="text-sm text-black">{product.category}</div>
+                      </td>
+                      <td className="px-4 py-4">
+                        <span className={`px-2 py-1 text-xs rounded-full ${
+                          product.stock > 10 ? 'bg-green-100 text-green-800' :
+                          product.stock > 0 ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {product.stock} unidades
+                        </span>
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="flex space-x-2">
+                          {product.isVegetarian && (
+                            <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
+                              Vegetariano
+                            </span>
+                          )}
+                          {product.isFeatured && (
+                            <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
+                              Destacado
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 text-sm space-x-2">
+                        <Button variant="outline" size="sm" onClick={() => openEditDialog(product)}>
+                          Editar
+                        </Button>
+                        {product.active ? (
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="text-red-600 border-red-200 hover:bg-red-50"
+                            onClick={() => deactivateProduct.mutate(product.id)}
+                          >
+                            <Trash className="h-4 w-4 mr-1" />
+                            Desactivar
+                          </Button>
+                        ) : (
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="text-green-600 border-green-200 hover:bg-green-50"
+                            onClick={() => updateProduct.mutate({ id: product.id, data: { active: true } })}
+                          >
+                            Activar
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Dialog para crear/editar productos */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>{editingProductId ? "Editar producto" : "Crear nuevo producto"}</DialogTitle>
+            <DialogDescription>
+              {editingProductId 
+                ? "Actualiza la información del producto seleccionado" 
+                : "Completa el formulario para crear un nuevo producto"
+              }
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmit}>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="name" className="text-right">
+                  Nombre
+                </Label>
+                <Input
+                  id="name"
+                  name="name"
+                  className="col-span-3"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="description" className="text-right">
+                  Descripción
+                </Label>
+                <Input
+                  id="description"
+                  name="description"
+                  className="col-span-3"
+                  value={formData.description}
+                  onChange={handleInputChange}
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="price" className="text-right">
+                  Precio
+                </Label>
+                <Input
+                  id="price"
+                  name="price"
+                  type="number"
+                  className="col-span-3"
+                  value={formData.price}
+                  onChange={handleInputChange}
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="stock" className="text-right">
+                  Stock
+                </Label>
+                <Input
+                  id="stock"
+                  name="stock"
+                  type="number"
+                  className="col-span-3"
+                  value={formData.stock}
+                  onChange={handleInputChange}
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="category" className="text-right">
+                  Categoría
+                </Label>
+                <Select value={formData.category} onValueChange={handleCategoryChange}>
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Seleccionar categoría" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Sorrentinos">Sorrentinos</SelectItem>
+                    <SelectItem value="Ravioles">Ravioles</SelectItem>
+                    <SelectItem value="Canelones">Canelones</SelectItem>
+                    <SelectItem value="Fideos">Fideos</SelectItem>
+                    <SelectItem value="Salsas">Salsas</SelectItem>
+                    <SelectItem value="General">General</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="unitSize" className="text-right">
+                  Tamaño/Unidad
+                </Label>
+                <Input
+                  id="unitSize"
+                  name="unitSize"
+                  className="col-span-3"
+                  placeholder="Ej: 500g / 12 unidades"
+                  value={formData.unitSize}
+                  onChange={handleInputChange}
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <div className="text-right">Opciones</div>
+                <div className="col-span-3 space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="isVegetarian" 
+                      checked={formData.isVegetarian} 
+                      onCheckedChange={(checked) => handleCheckboxChange('isVegetarian', checked as boolean)}
+                    />
+                    <Label htmlFor="isVegetarian">Vegetariano</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="isFeatured" 
+                      checked={formData.isFeatured}
+                      onCheckedChange={(checked) => handleCheckboxChange('isFeatured', checked as boolean)}
+                    />
+                    <Label htmlFor="isFeatured">Destacado</Label>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit" className="bg-[#e3a765] hover:bg-[#e3a765]/90">
+                {createProduct.isPending || updateProduct.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : null}
+                {editingProductId ? "Actualizar" : "Crear"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

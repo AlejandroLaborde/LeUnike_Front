@@ -85,6 +85,7 @@ type Product = {
   price: number;
   unitSize: string;
   category: string;
+  stock: number; // Added stock property
 };
 
 type OrderItem = {
@@ -325,13 +326,12 @@ export default function OrdersPage() {
 
   // Helper function to format date
   const formatOrderDate = (dateString: string) => {
+    if (!dateString) return '';
     try {
-      if (!dateString) return 'Fecha no disponible';
-      const date = new Date(dateString);
-      return isNaN(date.getTime()) ? 'Fecha inválida' : format(date, 'dd/MM/yyyy', { locale: es });
+      return format(new Date(dateString), 'dd/MM/yyyy', { locale: es });
     } catch (error) {
-      console.error('Error formatting date:', error);
-      return 'Fecha inválida';
+      console.error("Error formatting date:", error);
+      return '';
     }
   };
 
@@ -864,7 +864,7 @@ export default function OrdersPage() {
                 <CardContent className="p-4">
                   <div className="space-y-3">
                     {orderItems.map((item, index) => (
-                      <div key={index} className="flex items-end gap-2">
+                      <div key={index} className="flex items-end gap-2">                      <div key={index} className="flex items-end gap-2">
                         <div className="flex-1">
                           <Label htmlFor={`product-${index}`} className="text-xs text-[#5d6d7c]">Producto</Label>
                           <Select
@@ -877,7 +877,7 @@ export default function OrdersPage() {
                             <SelectContent>
                               {products?.map(product => (
                                 <SelectItem key={product.id} value={product.id.toString()}>
-                                  {product.name} - ${product.price} ({product.unitSize})
+                                  {product.name} - ${product.price} ({product.unitSize}) - Stock: {product.stock}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -889,6 +889,7 @@ export default function OrdersPage() {
                             id={`quantity-${index}`}
                             type="number" 
                             min="1" 
+                            max={item.product?.stock || 999} // Add max based on stock
                             value={item.quantity}
                             onChange={(e) => updateOrderItem(index, 'quantity', parseInt(e.target.value) || 1)}
                           />

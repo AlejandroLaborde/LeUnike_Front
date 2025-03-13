@@ -299,8 +299,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Create order with items
+      // Verificar stock disponible para cada producto
+      for (const item of items) {
+        const product = await storage.getProduct(item.productId);
+        if (!product) {
+          return res.status(404).json({ message: `Producto con ID ${item.productId} no encontrado` });
+        }
+        
+        if (product.stock < item.quantity) {
+          return res.status(400).json({ 
+            message: `Stock insuficiente para ${product.name}. Disponible: ${product.stock}, Solicitado: ${item.quantity}` 
+          });
+        }
+      }
+      
+      // Create order with items and actualizar stock
       const order = await storage.createOrderWithItems(parsedOrderData, items);
+      
+      // Actualizar stock de cada producto
+      for (const item of items) {
+        const product = await storage.getProduct(item.productId);
+        if (product) {
+          await storage.updateProduct(item.productId, { 
+            stock: product.stock - item.quantity 
+          });
+        }
+      }
+      
       res.status(201).json(order);
     } catch (error) {
       next(error);
