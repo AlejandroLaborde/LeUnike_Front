@@ -64,9 +64,23 @@
       "isFeatured": false,
       "active": true,
       "unitSize": "1",
-      "stock": 15,
+      "stock": 10,
       "id": 2,
       "createdAt": "2025-03-13T14:51:24.639Z"
+    },
+    {
+      "name": "ricota",
+      "description": "aaaa",
+      "price": 1111,
+      "category": "sorrentinos",
+      "imageUrl": "/images/placeholder.jpg",
+      "isVegetarian": false,
+      "isFeatured": false,
+      "active": true,
+      "unitSize": "5",
+      "stock": 10,
+      "id": 3,
+      "createdAt": "2025-03-13T18:28:38.906Z"
     }
   ],
   "clients": [
@@ -121,6 +135,22 @@
       "status": "pending",
       "id": 5,
       "createdAt": "2025-03-13T17:15:43.465Z"
+    },
+    {
+      "clientId": 1,
+      "vendorId": 1,
+      "totalAmount": 5445,
+      "status": "pending",
+      "id": 6,
+      "createdAt": "2025-03-13T18:51:11.840Z"
+    },
+    {
+      "clientId": 1,
+      "vendorId": 1,
+      "totalAmount": 3630,
+      "status": "pending",
+      "id": 7,
+      "createdAt": "2025-03-13T18:51:23.256Z"
     }
   ],
   "orderItems": [
@@ -158,6 +188,20 @@
       "unitPrice": 1500,
       "id": 5,
       "orderId": 5
+    },
+    {
+      "productId": 2,
+      "quantity": 3,
+      "unitPrice": 1500,
+      "id": 6,
+      "orderId": 6
+    },
+    {
+      "productId": 2,
+      "quantity": 2,
+      "unitPrice": 1500,
+      "id": 7,
+      "orderId": 7
     }
   ],
   "contactMessages": [],

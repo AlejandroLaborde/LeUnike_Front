@@ -142,8 +142,18 @@ export default function ProductsPage() {
 
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // Actualizar inmediatamente el caché con el nuevo dato sin esperar recargar
+      queryClient.setQueryData(['products'], (oldData: Product[] | undefined) => {
+        if (!oldData) return [];
+        return oldData.map(product => 
+          product.id === currentProductId ? { ...product, ...data } : product
+        );
+      });
+
+      // También invalidar la consulta para refrescar en segundo plano
       queryClient.invalidateQueries({ queryKey: ['products'] });
+
       setIsEditDialogOpen(false);
       resetForm();
       toast({
@@ -211,6 +221,7 @@ export default function ProductsPage() {
       unitSize: '',
       stock: 0
     });
+    setCurrentProductId(null);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -236,6 +247,7 @@ export default function ProductsPage() {
 
   const handleUpdateProduct = () => {
     if (currentProductId) {
+      console.log("Editando producto ID:", currentProductId, "con datos:", formData);
       updateMutation.mutate({ id: currentProductId, data: formData });
     }
   };
@@ -246,6 +258,9 @@ export default function ProductsPage() {
       deleteProductMutation.mutate(deleteProductId);
     }
   };
+
+  // Use state para manejar correctamente el ID del producto actual
+  const [currentProductId, setCurrentProductId] = useState<number | null>(null);
 
   const openEditDialog = (product: Product) => {
     setFormData({
@@ -260,10 +275,10 @@ export default function ProductsPage() {
       unitSize: product.unitSize,
       stock: product.stock
     });
+    setCurrentProductId(product.id); // Usar setState para actualizar el ID
     setIsEditDialogOpen(true);
   };
 
-  let currentProductId: number | null = null; // Initialize here to avoid errors
 
 
   return (
@@ -520,7 +535,16 @@ export default function ProductsPage() {
                 </div>
                 <div>
                   <label htmlFor="stock">Stock:</label>
-                  <Input id="stock" name="stock" type="number" value={formData.stock || ''} onChange={handleInputChange} required />
+                  <Input
+                    type="number"
+                    id="stock"
+                    placeholder="Stock disponible"
+                    value={formData.stock}
+                    onChange={(e) => {
+                      const newStock = parseInt(e.target.value) || 0;
+                      setFormData({ ...formData, stock: newStock });
+                    }}
+                  />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -591,7 +615,16 @@ export default function ProductsPage() {
               </div>
               <div>
                 <label htmlFor="edit-stock">Stock:</label>
-                <Input id="edit-stock" name="stock" type="number" value={formData.stock || ''} onChange={handleInputChange} required />
+                <Input
+                  type="number"
+                  id="edit-stock"
+                  placeholder="Stock disponible"
+                  value={formData.stock}
+                  onChange={(e) => {
+                    const newStock = parseInt(e.target.value) || 0;
+                    setFormData({ ...formData, stock: newStock });
+                  }}
+                />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
