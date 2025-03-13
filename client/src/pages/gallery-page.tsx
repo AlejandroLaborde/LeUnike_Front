@@ -16,19 +16,7 @@ interface Product {
   tags: string[];
 }
 
-const Image = ({ src, alt, className }: { src: string; alt: string; className: string }) => {
-  const [error, setError] = useState(false);
-
-  return (
-    <img
-      src={src}
-      alt={alt}
-      className={className}
-      onError={() => setError(true)}
-      style={{ display: error ? 'none' : 'block' }}
-    />
-  );
-};
+import { Image } from "@/components/image";
 
 export default function GalleryPage() {
   const [activeCategory, setActiveCategory] = useState<ProductCategory>('all');
@@ -155,7 +143,7 @@ export default function GalleryPage() {
           <div className="flex justify-between h-16">
             <div className="flex items-center">
               <Link to="/" className="flex-shrink-0 flex items-center">
-                <Logo className="h-12 w-auto" src="/images/logo.png" alt="Le Unique Logo" /> {/*Updated Logo path*/}
+                <Logo className="h-12 w-auto" />
               </Link>
             </div>
             <div className="hidden md:ml-6 md:flex md:items-center md:space-x-6">

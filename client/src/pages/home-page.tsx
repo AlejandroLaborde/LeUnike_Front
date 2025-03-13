@@ -69,21 +69,17 @@ export default function HomePage() {
                   </Link>
                 </div>
               </motion.div>
-              <motion.div 
-                className="w-full md:w-1/2"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
+              <motion.div
+                className="w-full md:w-1/2 flex justify-center"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
               >
-                <div className="relative">
-                  <div className="absolute -top-4 -left-4 w-20 h-20 bg-[#fdd000] rounded-full opacity-30"></div>
-                  <img 
-                    src="https://images.unsplash.com/photo-1601541968193-0db72c5383b4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80" 
-                    alt="Sorrentinos artesanales" 
-                    className="w-full h-auto rounded-lg shadow-lg object-cover max-h-[500px]"
-                  />
-                  <div className="absolute -bottom-4 -right-4 w-20 h-20 bg-[#e3a765] rounded-full opacity-30"></div>
-                </div>
+                <img 
+                  src="/images/main-sorrentino.jpg" 
+                  alt="Sorrentinos artesanales" 
+                  className="w-full max-w-md rounded-lg shadow-lg"
+                />
               </motion.div>
             </div>
           </div>
@@ -112,7 +108,7 @@ export default function HomePage() {
               <h3 className="text-xl font-semibold text-black text-center mb-3">Ingredientes Naturales</h3>
               <p className="text-[#5d6d7c] text-center">Utilizamos sólo ingredientes frescos y de primera calidad para nuestras masas y rellenos.</p>
             </motion.div>
-            
+
             {/* Feature 2 */}
             <motion.div 
               className="bg-white p-6 rounded-lg shadow-md transition-all hover:-translate-y-1 hover:shadow-lg"
@@ -129,7 +125,7 @@ export default function HomePage() {
               <h3 className="text-xl font-semibold text-black text-center mb-3">Congelación Óptima</h3>
               <p className="text-[#5d6d7c] text-center">Nuestro proceso de congelación preserva el sabor y las propiedades nutritivas hasta que estés listo para disfrutarlos.</p>
             </motion.div>
-            
+
             {/* Feature 3 */}
             <motion.div 
               className="bg-white p-6 rounded-lg shadow-md transition-all hover:-translate-y-1 hover:shadow-lg"
@@ -175,7 +171,7 @@ export default function HomePage() {
                 </a>
               </div>
             </div>
-            
+
             <div>
               <h4 className="text-lg font-semibold mb-4 text-[#fdd000]">Enlaces rápidos</h4>
               <ul className="space-y-2">
@@ -185,7 +181,7 @@ export default function HomePage() {
                 <li><Link to="/contact" className="text-white/80 hover:text-white transition-all">Contacto</Link></li>
               </ul>
             </div>
-            
+
             <div>
               <h4 className="text-lg font-semibold mb-4 text-[#fdd000]">Productos</h4>
               <ul className="space-y-2">
@@ -195,7 +191,7 @@ export default function HomePage() {
                 <li><Link to="/gallery" className="text-white/80 hover:text-white transition-all">Salsas</Link></li>
               </ul>
             </div>
-            
+
             <div>
               <h4 className="text-lg font-semibold mb-4 text-[#fdd000]">Contacto</h4>
               <ul className="space-y-3">
@@ -221,7 +217,7 @@ export default function HomePage() {
               </ul>
             </div>
           </div>
-          
+
           <div className="mt-12 pt-8 border-t border-white/20 text-center">
             <p className="text-white/80">&copy; {new Date().getFullYear()} Le Unique. Todos los derechos reservados.</p>
           </div>

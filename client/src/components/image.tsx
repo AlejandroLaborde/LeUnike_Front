@@ -1,24 +1,30 @@
 
 import { useState } from 'react';
 
-interface ImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
+interface ImageProps {
+  src: string;
+  alt: string;
+  className?: string;
   fallbackSrc?: string;
 }
 
-export function Image({ src, alt, fallbackSrc = "/images/fallback.jpg", className, ...props }: ImageProps) {
+export function Image({ src, alt, className = "", fallbackSrc = "/images/placeholder.jpg" }: ImageProps) {
   const [imgSrc, setImgSrc] = useState(src);
-  
+  const [hasError, setHasError] = useState(false);
+
   const handleError = () => {
-    setImgSrc(fallbackSrc);
+    if (!hasError) {
+      setImgSrc(fallbackSrc);
+      setHasError(true);
+    }
   };
 
   return (
     <img
       src={imgSrc}
       alt={alt}
-      onError={handleError}
       className={className}
-      {...props}
+      onError={handleError}
     />
   );
 }

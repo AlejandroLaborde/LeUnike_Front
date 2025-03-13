@@ -69,7 +69,7 @@ export default function ProductsPage() {
     description: '',
     price: 0,
     category: 'sorrentinos',
-    imageUrl: '',
+    imageUrl: '/images/placeholder.jpg', // Updated imageUrl
     isVegetarian: false,
     isFeatured: false,
     active: true,
@@ -204,7 +204,7 @@ export default function ProductsPage() {
       description: '',
       price: 0,
       category: 'sorrentinos',
-      imageUrl: '',
+      imageUrl: '/images/placeholder.jpg', // Updated imageUrl
       isVegetarian: false,
       isFeatured: false,
       active: true,
