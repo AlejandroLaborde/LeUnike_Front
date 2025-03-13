@@ -113,7 +113,7 @@ export default function OrdersPage() {
   const queryClient = useQueryClient();
   const [location] = useLocation();
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
-  
+
   // Extract client ID from URL if present
   const searchParams = new URLSearchParams(location.split('?')[1]);
   const clientFilter = searchParams.get('client') 
@@ -137,27 +137,27 @@ export default function OrdersPage() {
     products: [{ productId: "", quantity: 1 }],
     status: "pending" as OrderStatus,
   });
-  
+
   // Selected products for order calculation
   const [orderItems, setOrderItems] = useState<Array<{
     productId: string;
     quantity: number;
     product?: Product;
   }>>([{ productId: "", quantity: 1 }]);
-  
+
   // Calculate total amount
   const calculateTotal = () => {
     if (!products) return { subtotal: 0, iva: 0, total: 0 };
-    
+
     const subtotal = orderItems.reduce((sum, item) => {
       if (!item.productId) return sum;
       const product = products.find(p => p.id.toString() === item.productId);
       return sum + (product ? product.price * item.quantity : 0);
     }, 0);
-    
+
     const iva = subtotal * 0.21; // 21% IVA
     const total = subtotal + iva;
-    
+
     return { subtotal, iva, total };
   };
 
@@ -192,7 +192,7 @@ export default function OrdersPage() {
   const addProductToOrder = () => {
     setOrderItems([...orderItems, { productId: "", quantity: 1 }]);
   };
-  
+
   const removeProductFromOrder = (index: number) => {
     if (orderItems.length === 1) {
       // Always keep at least one product slot
@@ -203,10 +203,10 @@ export default function OrdersPage() {
     newItems.splice(index, 1);
     setOrderItems(newItems);
   };
-  
+
   const updateOrderItem = (index: number, field: 'productId' | 'quantity', value: string | number) => {
     const newItems = [...orderItems];
-    
+
     if (field === 'productId') {
       const productId = value as string;
       // Also update the product reference for easy access
@@ -217,19 +217,19 @@ export default function OrdersPage() {
       const quantity = typeof value === 'string' ? parseInt(value) : value;
       newItems[index] = { ...newItems[index], quantity };
     }
-    
+
     setOrderItems(newItems);
   };
-  
+
   // Create order mutation
   const createOrderMutation = useMutation({
     mutationFn: async () => {
       if (!formData.clientId || orderItems.some(item => !item.productId || item.quantity < 1)) {
         throw new Error("Por favor completa todos los campos obligatorios");
       }
-      
+
       const { total } = calculateTotal();
-      
+
       // Prepare order data
       const orderData = {
         clientId: parseInt(formData.clientId),
@@ -242,7 +242,7 @@ export default function OrdersPage() {
           unitPrice: products?.find(p => p.id.toString() === item.productId)?.price || 0
         }))
       };
-      
+
       const res = await apiRequest('POST', '/api/orders', orderData);
       return await res.json();
     },
@@ -256,7 +256,7 @@ export default function OrdersPage() {
         status: "pending" as OrderStatus,
       });
       setOrderItems([{ productId: "", quantity: 1 }]);
-      
+
       toast({
         title: "Pedido creado",
         description: "El pedido ha sido creado correctamente",
@@ -270,7 +270,7 @@ export default function OrdersPage() {
       });
     }
   });
-  
+
   // Change order status mutation
   const updateOrderStatusMutation = useMutation({
     mutationFn: async (data: { id: number, status: OrderStatus }) => {
@@ -379,7 +379,7 @@ export default function OrdersPage() {
               : 'Gestiona los pedidos de tus clientes asignados'}
           </p>
         </div>
-        
+
         <Button 
           onClick={() => setIsNewOrderOpen(true)}
           className="bg-[#e3a765] hover:bg-[#e3a765]/90"
@@ -401,7 +401,7 @@ export default function OrdersPage() {
               onChange={e => setSearchTerm(e.target.value)}
             />
           </div>
-          
+
           <div className="flex gap-2">
             <Select
               value={statusFilter}
@@ -418,7 +418,7 @@ export default function OrdersPage() {
                 <SelectItem value="canceled">Cancelados</SelectItem>
               </SelectContent>
             </Select>
-            
+
             <Button 
               variant="outline" 
               size="icon" 
@@ -441,7 +441,7 @@ export default function OrdersPage() {
               : "Lista de pedidos registrados en el sistema"}
           </CardDescription>
         </CardHeader>
-        
+
         <CardContent>
           <Tabs defaultValue={initialTab} className="w-full">
             <TabsList className="grid grid-cols-5 mb-6">
@@ -461,7 +461,7 @@ export default function OrdersPage() {
                 Cancelados <Badge variant="outline" className="ml-2 bg-red-100">{ordersByStatus.canceled.length}</Badge>
               </TabsTrigger>
             </TabsList>
-            
+
             {isLoading ? (
               <div className="flex justify-center items-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-[#e3a765]" />
@@ -503,7 +503,7 @@ export default function OrdersPage() {
                       // Find client name if available
                       const clientName = clients?.find(c => c.id === order.clientId)?.name || `Cliente #${order.clientId}`;
                       const statusInfo = getStatusBadge(order.status);
-                      
+
                       return (
                         <TableRow key={order.id}>
                           <TableCell className="font-medium">{`#${order.id.toString().padStart(4, '0')}`}</TableCell>
@@ -517,8 +517,8 @@ export default function OrdersPage() {
                             ${order.totalAmount?.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
                           </TableCell>
                           <TableCell>
-                            <Badge variant="outline" className={statusInfo.className}>
-                              {statusInfo.icon}
+                            <Badge variant="outline" className={statusInfo?.className || ''}>
+                              {statusInfo?.icon}
                               {getStatusText(order.status)}
                             </Badge>
                           </TableCell>
@@ -543,7 +543,7 @@ export default function OrdersPage() {
                                   <>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuLabel>Cambiar estado</DropdownMenuLabel>
-                                    
+
                                     {order.status !== 'pending' && (
                                       <DropdownMenuItem onClick={() => {
                                         setSelectedOrder(order);
@@ -554,7 +554,7 @@ export default function OrdersPage() {
                                         Pendiente
                                       </DropdownMenuItem>
                                     )}
-                                    
+
                                     {order.status !== 'processing' && (
                                       <DropdownMenuItem onClick={() => {
                                         setSelectedOrder(order);
@@ -565,7 +565,7 @@ export default function OrdersPage() {
                                         En proceso
                                       </DropdownMenuItem>
                                     )}
-                                    
+
                                     {order.status !== 'delivered' && (
                                       <DropdownMenuItem onClick={() => {
                                         setSelectedOrder(order);
@@ -576,7 +576,7 @@ export default function OrdersPage() {
                                         Entregado
                                       </DropdownMenuItem>
                                     )}
-                                    
+
                                     {order.status !== 'canceled' && (
                                       <DropdownMenuItem onClick={() => {
                                         setSelectedOrder(order);
@@ -612,7 +612,7 @@ export default function OrdersPage() {
               Información completa del pedido
             </DialogDescription>
           </DialogHeader>
-          
+
           {viewingOrder && (
             <div className="space-y-6 py-4">
               {/* Order Info */}
@@ -627,7 +627,7 @@ export default function OrdersPage() {
                     <p className="text-black">{formatOrderDate(viewingOrder.createdAt)}</p>
                   </div>
                 </div>
-                
+
                 <div className="flex justify-between mt-2">
                   <div>
                     <h3 className="text-sm font-medium text-[#5d6d7c]">Estado</h3>
@@ -642,7 +642,7 @@ export default function OrdersPage() {
                   </div>
                 </div>
               </div>
-              
+
               {/* Order Items (this would come from the real data) */}
               <div>
                 <h3 className="text-sm font-medium text-[#5d6d7c] mb-2">Productos</h3>
@@ -661,7 +661,7 @@ export default function OrdersPage() {
                         <p className="font-medium">$3,600</p>
                       </div>
                     </div>
-                    
+
                     <div className="flex justify-between items-center pb-2 border-b">
                       <div className="flex-1">
                         <p className="font-medium">Ravioles de Carne</p>
@@ -674,7 +674,7 @@ export default function OrdersPage() {
                         <p className="font-medium">$1,900</p>
                       </div>
                     </div>
-                    
+
                     <div className="flex justify-between items-center pb-2 border-b">
                       <div className="flex-1">
                         <p className="font-medium">Salsa Filetto</p>
@@ -688,7 +688,7 @@ export default function OrdersPage() {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="mt-4 pt-2 border-t flex justify-end">
                     <div className="text-right">
                       <p className="text-sm text-[#5d6d7c]">Subtotal: $7,400</p>
@@ -700,7 +700,7 @@ export default function OrdersPage() {
               </div>
             </div>
           )}
-          
+
           <DialogFooter className="flex justify-between">
             <Button 
               variant="outline" 
@@ -708,7 +708,7 @@ export default function OrdersPage() {
             >
               Cerrar
             </Button>
-            
+
             {(isAdmin || viewingOrder?.status === 'pending') && (
               <Button 
                 className="bg-[#e3a765] hover:bg-[#e3a765]/90"
@@ -737,7 +737,7 @@ export default function OrdersPage() {
               Selecciona el nuevo estado para el pedido #{selectedOrder?.id.toString().padStart(4, '0')}
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="py-4">
             <Select
               value={newStatus}
@@ -774,7 +774,7 @@ export default function OrdersPage() {
               </SelectContent>
             </Select>
           </div>
-          
+
           <DialogFooter>
             <Button 
               variant="outline" 
@@ -823,7 +823,7 @@ export default function OrdersPage() {
               Crea un nuevo pedido seleccionando el cliente y los productos
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="py-4 space-y-4">
             {/* Client selection */}
             <div>
@@ -849,7 +849,7 @@ export default function OrdersPage() {
                 </SelectContent>
               </Select>
             </div>
-            
+
             {/* Products selection */}
             <div>
               <Label className="text-[#5d6d7c] block mb-2">Productos*</Label>
@@ -897,7 +897,7 @@ export default function OrdersPage() {
                       </div>
                     ))}
                   </div>
-                  
+
                   <Button 
                     variant="outline" 
                     size="sm" 
@@ -910,7 +910,7 @@ export default function OrdersPage() {
                 </CardContent>
               </Card>
             </div>
-            
+
             {/* Order summary */}
             <div>
               <h3 className="text-sm font-medium text-[#5d6d7c] mb-2">Resumen</h3>
@@ -937,7 +937,7 @@ export default function OrdersPage() {
               </div>
             </div>
           </div>
-          
+
           <DialogFooter>
             <Button 
               variant="outline" 

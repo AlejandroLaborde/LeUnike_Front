@@ -54,8 +54,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/users", isAuthenticated, isAdmin, async (req, res, next) => {
     try {
       const users = await storage.getAllUsers();
+      console.log("Retrieved all users:", users.length); // Logging para depuración
       res.json(users);
     } catch (error) {
+      console.error("Error getting all users:", error);
       next(error);
     }
   });
@@ -103,8 +105,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const users = await storage.getAllUsers();
       const vendors = users.filter(user => user.role === 'vendor' && user.active);
+      console.log("Retrieved vendors:", vendors); // Logging para depuración
       res.json(vendors);
     } catch (error) {
+      console.error("Error getting vendors:", error);
       next(error);
     }
   });
