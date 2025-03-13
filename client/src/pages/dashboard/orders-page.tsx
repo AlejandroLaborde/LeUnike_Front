@@ -2,36 +2,42 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
+import {
+  Card,
+  CardContent,
+  CardHeader,
   CardTitle,
-  CardDescription, 
-  CardFooter 
+  CardDescription,
+  CardFooter,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogFooter, 
-  DialogHeader, 
-  DialogTitle 
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { 
-  MoreHorizontal, 
-  Plus, 
-  Search, 
-  Edit, 
-  Trash, 
+import {
+  MoreHorizontal,
+  Plus,
+  Search,
+  Edit,
+  Trash,
   Loader2,
   FileText,
   User,
@@ -44,9 +50,9 @@ import {
   XCircle,
   ArrowUpDown,
   Filter,
-  RefreshCw
+  RefreshCw,
 } from "lucide-react";
-import { 
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -67,9 +73,16 @@ import {
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useLocation } from "wouter";
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
+import {
+  Table,
+  TableHeader,
+  TableRow,
+  TableHead,
+  TableBody,
+  TableCell,
+} from "@/components/ui/table";
 
-type OrderStatus = 'pending' | 'processing' | 'delivered' | 'canceled';
+type OrderStatus = "pending" | "processing" | "delivered" | "canceled";
 
 type Client = {
   id: number;
@@ -113,24 +126,24 @@ export default function OrdersPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [location] = useLocation();
-  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
+  const isAdmin = user?.role === "admin" || user?.role === "super_admin";
 
   // Extract client ID from URL if present
-  const searchParams = new URLSearchParams(location.split('?')[1]);
-  const clientFilter = searchParams.get('client') 
-    ? parseInt(searchParams.get('client') as string) 
+  const searchParams = new URLSearchParams(location.split("?")[1]);
+  const clientFilter = searchParams.get("client")
+    ? parseInt(searchParams.get("client") as string)
     : null;
 
   // State
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [statusFilter, setStatusFilter] = useState<OrderStatus | "all">("all");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [viewingOrder, setViewingOrder] = useState<Order | null>(null);
   const [isOrderDetailOpen, setIsOrderDetailOpen] = useState(false);
   const [isNewOrderOpen, setIsNewOrderOpen] = useState(false);
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [newStatus, setNewStatus] = useState<OrderStatus>('pending');
+  const [newStatus, setNewStatus] = useState<OrderStatus>("pending");
 
   // Form state
   const [formData, setFormData] = useState({
@@ -140,11 +153,13 @@ export default function OrdersPage() {
   });
 
   // Selected products for order calculation
-  const [orderItems, setOrderItems] = useState<Array<{
-    productId: string;
-    quantity: number;
-    product?: Product;
-  }>>([{ productId: "", quantity: 1 }]);
+  const [orderItems, setOrderItems] = useState<
+    Array<{
+      productId: string;
+      quantity: number;
+      product?: Product;
+    }>
+  >([{ productId: "", quantity: 1 }]);
 
   // Calculate total amount
   const calculateTotal = () => {
@@ -152,7 +167,7 @@ export default function OrdersPage() {
 
     const subtotal = orderItems.reduce((sum, item) => {
       if (!item.productId) return sum;
-      const product = products.find(p => p.id.toString() === item.productId);
+      const product = products.find((p) => p.id.toString() === item.productId);
       return sum + (product ? product.price * item.quantity : 0);
     }, 0);
 
@@ -164,29 +179,29 @@ export default function OrdersPage() {
 
   // Fetch orders
   const { data: orders, isLoading } = useQuery({
-    queryKey: ['/api/orders'],
+    queryKey: ["/api/orders"],
     queryFn: async () => {
-      const res = await apiRequest('GET', '/api/orders');
-      return await res.json() as Order[];
-    }
+      const res = await apiRequest("GET", "/api/orders");
+      return (await res.json()) as Order[];
+    },
   });
 
   // Fetch clients for order form
   const { data: clients } = useQuery({
-    queryKey: ['/api/clients'],
+    queryKey: ["/api/clients"],
     queryFn: async () => {
-      const res = await apiRequest('GET', '/api/clients');
-      return await res.json() as Client[];
-    }
+      const res = await apiRequest("GET", "/api/clients");
+      return (await res.json()) as Client[];
+    },
   });
 
   // Fetch products for order form
   const { data: products } = useQuery({
-    queryKey: ['/api/products'],
+    queryKey: ["/api/products"],
     queryFn: async () => {
-      const res = await apiRequest('GET', '/api/products');
-      return await res.json() as Product[];
-    }
+      const res = await apiRequest("GET", "/api/products");
+      return (await res.json()) as Product[];
+    },
   });
 
   // Functions to manage order items
@@ -205,17 +220,21 @@ export default function OrdersPage() {
     setOrderItems(newItems);
   };
 
-  const updateOrderItem = (index: number, field: 'productId' | 'quantity', value: string | number) => {
+  const updateOrderItem = (
+    index: number,
+    field: "productId" | "quantity",
+    value: string | number,
+  ) => {
     const newItems = [...orderItems];
 
-    if (field === 'productId') {
+    if (field === "productId") {
       const productId = value as string;
       // Also update the product reference for easy access
-      const product = products?.find(p => p.id.toString() === productId);
+      const product = products?.find((p) => p.id.toString() === productId);
       newItems[index] = { ...newItems[index], productId, product };
-    } else if (field === 'quantity') {
+    } else if (field === "quantity") {
       // Ensure quantity is always a number
-      const quantity = typeof value === 'string' ? parseInt(value) : value;
+      const quantity = typeof value === "string" ? parseInt(value) : value;
       newItems[index] = { ...newItems[index], quantity };
     }
 
@@ -225,7 +244,10 @@ export default function OrdersPage() {
   // Create order mutation
   const createOrderMutation = useMutation({
     mutationFn: async () => {
-      if (!formData.clientId || orderItems.some(item => !item.productId || item.quantity < 1)) {
+      if (
+        !formData.clientId ||
+        orderItems.some((item) => !item.productId || item.quantity < 1)
+      ) {
         throw new Error("Por favor completa todos los campos obligatorios");
       }
 
@@ -237,18 +259,20 @@ export default function OrdersPage() {
         vendorId: user?.id, // Current user as vendor
         status: formData.status,
         totalAmount: total,
-        items: orderItems.map(item => ({
+        items: orderItems.map((item) => ({
           productId: parseInt(item.productId),
           quantity: item.quantity,
-          unitPrice: products?.find(p => p.id.toString() === item.productId)?.price || 0
-        }))
+          unitPrice:
+            products?.find((p) => p.id.toString() === item.productId)?.price ||
+            0,
+        })),
       };
 
-      const res = await apiRequest('POST', '/api/orders', orderData);
+      const res = await apiRequest("POST", "/api/orders", orderData);
       return await res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
       setIsNewOrderOpen(false);
       // Reset form
       setFormData({
@@ -269,17 +293,19 @@ export default function OrdersPage() {
         description: error.message,
         variant: "destructive",
       });
-    }
+    },
   });
 
   // Change order status mutation
   const updateOrderStatusMutation = useMutation({
-    mutationFn: async (data: { id: number, status: OrderStatus }) => {
-      const res = await apiRequest('PUT', `/api/orders/${data.id}`, { status: data.status });
+    mutationFn: async (data: { id: number; status: OrderStatus }) => {
+      const res = await apiRequest("PUT", `/api/orders/${data.id}`, {
+        status: data.status,
+      });
       return await res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
       setIsStatusDialogOpen(false);
       toast({
         title: "Estado actualizado",
@@ -292,87 +318,96 @@ export default function OrdersPage() {
         description: error.message,
         variant: "destructive",
       });
-    }
+    },
   });
 
   // Filter, sort, and group orders
   const processedOrders = orders
     ? orders
         // First apply client filter if present
-        .filter(order => clientFilter ? order.clientId === clientFilter : true)
+        .filter((order) =>
+          clientFilter ? order.clientId === clientFilter : true,
+        )
         // Then apply search and status filters
-        .filter(order => {
+        .filter((order) => {
           // Client name search will be added once we have client details
           const matchesSearch = order.id.toString().includes(searchTerm);
-          const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
+          const matchesStatus =
+            statusFilter === "all" || order.status === statusFilter;
           return matchesSearch && matchesStatus;
         })
         // Sort by date
         .sort((a, b) => {
           const dateA = new Date(a.createdAt).getTime();
           const dateB = new Date(b.createdAt).getTime();
-          return sortDirection === 'asc' ? dateA - dateB : dateB - dateA;
+          return sortDirection === "asc" ? dateA - dateB : dateB - dateA;
         })
     : [];
 
   // Group orders by status for the tabs view
   const ordersByStatus = {
     all: processedOrders,
-    pending: processedOrders.filter(order => order.status === 'pending'),
-    processing: processedOrders.filter(order => order.status === 'processing'),
-    delivered: processedOrders.filter(order => order.status === 'delivered'),
-    canceled: processedOrders.filter(order => order.status === 'canceled')
+    pending: processedOrders.filter((order) => order.status === "pending"),
+    processing: processedOrders.filter(
+      (order) => order.status === "processing",
+    ),
+    delivered: processedOrders.filter((order) => order.status === "delivered"),
+    canceled: processedOrders.filter((order) => order.status === "canceled"),
   };
 
   // Helper function to format date
   const formatOrderDate = (dateString: string) => {
-    if (!dateString) return '';
+    if (!dateString) return "";
     try {
-      return format(new Date(dateString), 'dd/MM/yyyy', { locale: es });
+      return format(new Date(dateString), "dd/MM/yyyy", { locale: es });
     } catch (error) {
       console.error("Error formatting date:", error);
-      return '';
+      return "";
     }
   };
 
   // Helper function to get status badge styles
   const getStatusBadge = (status: OrderStatus) => {
-    switch(status) {
-      case 'pending':
+    switch (status) {
+      case "pending":
         return {
           icon: <Clock className="h-3 w-3 mr-1" />,
-          className: "bg-yellow-100 text-yellow-800 border-0"
+          className: "bg-yellow-100 text-yellow-800 border-0",
         };
-      case 'processing':
+      case "processing":
         return {
           icon: <Truck className="h-3 w-3 mr-1" />,
-          className: "bg-blue-100 text-blue-800 border-0"
+          className: "bg-blue-100 text-blue-800 border-0",
         };
-      case 'delivered':
+      case "delivered":
         return {
           icon: <Check className="h-3 w-3 mr-1" />,
-          className: "bg-green-100 text-green-800 border-0"
+          className: "bg-green-100 text-green-800 border-0",
         };
-      case 'canceled':
+      case "canceled":
         return {
           icon: <XCircle className="h-3 w-3 mr-1" />,
-          className: "bg-red-100 text-red-800 border-0"
+          className: "bg-red-100 text-red-800 border-0",
         };
     }
   };
 
   // Helper function to get status text
   const getStatusText = (status: OrderStatus) => {
-    switch(status) {
-      case 'pending': return 'Pendiente';
-      case 'processing': return 'En proceso';
-      case 'delivered': return 'Entregado';
-      case 'canceled': return 'Cancelado';
+    switch (status) {
+      case "pending":
+        return "Pendiente";
+      case "processing":
+        return "En proceso";
+      case "delivered":
+        return "Entregado";
+      case "canceled":
+        return "Cancelado";
     }
   };
 
   // Create initial tab value based on URL query param or default to 'all'
-  const initialTab = statusFilter !== 'all' ? statusFilter : 'all';
+  const initialTab = statusFilter !== "all" ? statusFilter : "all";
 
   return (
     <div>
@@ -381,13 +416,13 @@ export default function OrdersPage() {
         <div>
           <h1 className="text-2xl font-bold text-black mb-1">Pedidos</h1>
           <p className="text-[#5d6d7c]">
-            {isAdmin 
-              ? 'Gestiona todos los pedidos de la empresa' 
-              : 'Gestiona los pedidos de tus clientes asignados'}
+            {isAdmin
+              ? "Gestiona todos los pedidos de la empresa"
+              : "Gestiona los pedidos de tus clientes asignados"}
           </p>
         </div>
 
-        <Button 
+        <Button
           onClick={() => setIsNewOrderOpen(true)}
           className="bg-[#e3a765] hover:bg-[#e3a765]/90"
         >
@@ -400,19 +435,24 @@ export default function OrdersPage() {
       <div className="bg-white rounded-lg shadow p-4 mb-6">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#5d6d7c]" size={18} />
+            <Search
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#5d6d7c]"
+              size={18}
+            />
             <Input
               placeholder="Buscar por número de pedido..."
               className="pl-10"
               value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
 
           <div className="flex gap-2">
             <Select
               value={statusFilter}
-              onValueChange={(value) => setStatusFilter(value as OrderStatus | 'all')}
+              onValueChange={(value) =>
+                setStatusFilter(value as OrderStatus | "all")
+              }
             >
               <SelectTrigger className="w-[160px]">
                 <SelectValue placeholder="Estado" />
@@ -426,10 +466,12 @@ export default function OrdersPage() {
               </SelectContent>
             </Select>
 
-            <Button 
-              variant="outline" 
-              size="icon" 
-              onClick={() => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')}
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() =>
+                setSortDirection(sortDirection === "asc" ? "desc" : "asc")
+              }
               className="w-10 h-10"
             >
               <ArrowUpDown className="h-4 w-4" />
@@ -444,7 +486,7 @@ export default function OrdersPage() {
           <CardTitle>Pedidos</CardTitle>
           <CardDescription>
             {clientFilter && clients
-              ? `Mostrando pedidos del cliente: ${clients.find(c => c.id === clientFilter)?.name || 'Cliente seleccionado'}`
+              ? `Mostrando pedidos del cliente: ${clients.find((c) => c.id === clientFilter)?.name || "Cliente seleccionado"}`
               : "Lista de pedidos registrados en el sistema"}
           </CardDescription>
         </CardHeader>
@@ -452,20 +494,47 @@ export default function OrdersPage() {
         <CardContent>
           <Tabs defaultValue={initialTab} className="w-full">
             <TabsList className="grid grid-cols-5 mb-6">
-              <TabsTrigger value="all" onClick={() => setStatusFilter('all')}>
-                Todos <Badge variant="outline" className="ml-2 bg-gray-100">{ordersByStatus.all.length}</Badge>
+              <TabsTrigger value="all" onClick={() => setStatusFilter("all")}>
+                Todos{" "}
+                <Badge variant="outline" className="ml-2 bg-gray-100">
+                  {ordersByStatus.all.length}
+                </Badge>
               </TabsTrigger>
-              <TabsTrigger value="pending" onClick={() => setStatusFilter('pending')}>
-                Pendientes <Badge variant="outline" className="ml-2 bg-yellow-100">{ordersByStatus.pending.length}</Badge>
+              <TabsTrigger
+                value="pending"
+                onClick={() => setStatusFilter("pending")}
+              >
+                Pendientes{" "}
+                <Badge variant="outline" className="ml-2 bg-yellow-100">
+                  {ordersByStatus.pending.length}
+                </Badge>
               </TabsTrigger>
-              <TabsTrigger value="processing" onClick={() => setStatusFilter('processing')}>
-                En proceso <Badge variant="outline" className="ml-2 bg-blue-100">{ordersByStatus.processing.length}</Badge>
+              <TabsTrigger
+                value="processing"
+                onClick={() => setStatusFilter("processing")}
+              >
+                En proceso{" "}
+                <Badge variant="outline" className="ml-2 bg-blue-100">
+                  {ordersByStatus.processing.length}
+                </Badge>
               </TabsTrigger>
-              <TabsTrigger value="delivered" onClick={() => setStatusFilter('delivered')}>
-                Entregados <Badge variant="outline" className="ml-2 bg-green-100">{ordersByStatus.delivered.length}</Badge>
+              <TabsTrigger
+                value="delivered"
+                onClick={() => setStatusFilter("delivered")}
+              >
+                Entregados{" "}
+                <Badge variant="outline" className="ml-2 bg-green-100">
+                  {ordersByStatus.delivered.length}
+                </Badge>
               </TabsTrigger>
-              <TabsTrigger value="canceled" onClick={() => setStatusFilter('canceled')}>
-                Cancelados <Badge variant="outline" className="ml-2 bg-red-100">{ordersByStatus.canceled.length}</Badge>
+              <TabsTrigger
+                value="canceled"
+                onClick={() => setStatusFilter("canceled")}
+              >
+                Cancelados{" "}
+                <Badge variant="outline" className="ml-2 bg-red-100">
+                  {ordersByStatus.canceled.length}
+                </Badge>
               </TabsTrigger>
             </TabsList>
 
@@ -476,15 +545,17 @@ export default function OrdersPage() {
             ) : processedOrders.length === 0 ? (
               <div className="text-center py-12">
                 <ShoppingCart className="h-12 w-12 text-[#5d6d7c] mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-black mb-2">No se encontraron pedidos</h3>
+                <h3 className="text-lg font-medium text-black mb-2">
+                  No se encontraron pedidos
+                </h3>
                 <p className="text-[#5d6d7c] max-w-md mx-auto mb-6">
-                  {searchTerm || statusFilter !== 'all'
+                  {searchTerm || statusFilter !== "all"
                     ? "No hay resultados para los filtros aplicados."
                     : clientFilter
                       ? "Este cliente no tiene pedidos registrados."
                       : "No hay pedidos registrados en el sistema."}
                 </p>
-                <Button 
+                <Button
                   className="bg-[#e3a765] hover:bg-[#e3a765]/90"
                   onClick={() => setIsNewOrderOpen(true)}
                 >
@@ -493,126 +564,153 @@ export default function OrdersPage() {
                 </Button>
               </div>
             ) : (
-              <> {/* Added <></> to wrap the Table and Button */}
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[100px]">Nº Pedido</TableHead>
-                      <TableHead>Cliente</TableHead>
-                      <TableHead>Total</TableHead>
-                      <TableHead>Estado</TableHead>
-                      <TableHead>Fecha</TableHead>
-                      <TableHead className="text-right">Acciones</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {processedOrders.map((order, index) => {
-                      // Find client name if available
-                      const clientName = clients?.find(c => c.id === order.clientId)?.name || `Cliente #${order.clientId}`;
-                      const statusInfo = getStatusBadge(order.status);
+              <>
+                {" "}
+                {/* Added <></> to wrap the Table and Button */}
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[100px]">Nº Pedido</TableHead>
+                        <TableHead>Cliente</TableHead>
+                        <TableHead>Total</TableHead>
+                        <TableHead>Estado</TableHead>
+                        <TableHead>Fecha</TableHead>
+                        <TableHead className="text-right">Acciones</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {processedOrders.map((order, index) => {
+                        // Find client name if available
+                        const clientName =
+                          clients?.find((c) => c.id === order.clientId)?.name ||
+                          `Cliente #${order.clientId}`;
+                        const statusInfo = getStatusBadge(order.status);
 
-                      return (
-                        <TableRow key={order.id}>
-                          <TableCell className="font-medium">{`#${order.id.toString().padStart(4, '0')}`}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <User className="h-4 w-4 text-[#5d6d7c]" />
-                              <span>{clientName}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="font-medium text-[#e3a765]">
-                            ${order.totalAmount?.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className={statusInfo?.className || ''}>
-                              {statusInfo?.icon}
-                              {getStatusText(order.status)}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{formatOrderDate(order.createdAt)}</TableCell>
-                          <TableCell className="text-right">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                                <DropdownMenuItem onClick={() => {
-                                  setViewingOrder(order);
-                                  setIsOrderDetailOpen(true);
-                                }}>
-                                  <FileText className="mr-2 h-4 w-4" />
-                                  Ver detalles
-                                </DropdownMenuItem>
-                                {(isAdmin || order.status === 'pending') && (
-                                  <>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuLabel>Cambiar estado</DropdownMenuLabel>
+                        return (
+                          <TableRow key={order.id}>
+                            <TableCell className="font-medium">{`#${order.id.toString().padStart(4, "0")}`}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <User className="h-4 w-4 text-[#5d6d7c]" />
+                                <span>{clientName}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="font-medium text-[#e3a765]">
+                              $
+                              {order.totalAmount?.toLocaleString("es-AR", {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              }) || "0.00"}
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant="outline"
+                                className={statusInfo?.className || ""}
+                              >
+                                {statusInfo?.icon}
+                                {getStatusText(order.status)}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {formatOrderDate(order.createdAt)}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuLabel>
+                                    Acciones
+                                  </DropdownMenuLabel>
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      setViewingOrder(order);
+                                      setIsOrderDetailOpen(true);
+                                    }}
+                                  >
+                                    <FileText className="mr-2 h-4 w-4" />
+                                    Ver detalles
+                                  </DropdownMenuItem>
+                                  {(isAdmin || order.status === "pending") && (
+                                    <>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuLabel>
+                                        Cambiar estado
+                                      </DropdownMenuLabel>
 
-                                    {order.status !== 'pending' && (
-                                      <DropdownMenuItem onClick={() => {
-                                        setSelectedOrder(order);
-                                        setNewStatus('pending');
-                                        setIsStatusDialogOpen(true);
-                                      }}>
-                                        <Clock className="mr-2 h-4 w-4 text-yellow-600" />
-                                        Pendiente
-                                      </DropdownMenuItem>
-                                    )}
+                                      {order.status !== "pending" && (
+                                        <DropdownMenuItem
+                                          onClick={() => {
+                                            setSelectedOrder(order);
+                                            setNewStatus("pending");
+                                            setIsStatusDialogOpen(true);
+                                          }}
+                                        >
+                                          <Clock className="mr-2 h-4 w-4 text-yellow-600" />
+                                          Pendiente
+                                        </DropdownMenuItem>
+                                      )}
 
-                                    {order.status !== 'processing' && (
-                                      <DropdownMenuItem onClick={() => {
-                                        setSelectedOrder(order);
-                                        setNewStatus('processing');
-                                        setIsStatusDialogOpen(true);
-                                      }}>
-                                        <Truck className="mr-2 h-4 w-4 text-blue-600" />
-                                        En proceso
-                                      </DropdownMenuItem>
-                                    )}
+                                      {order.status !== "processing" && (
+                                        <DropdownMenuItem
+                                          onClick={() => {
+                                            setSelectedOrder(order);
+                                            setNewStatus("processing");
+                                            setIsStatusDialogOpen(true);
+                                          }}
+                                        >
+                                          <Truck className="mr-2 h-4 w-4 text-blue-600" />
+                                          En proceso
+                                        </DropdownMenuItem>
+                                      )}
 
-                                    {order.status !== 'delivered' && (
-                                      <DropdownMenuItem onClick={() => {
-                                        setSelectedOrder(order);
-                                        setNewStatus('delivered');
-                                        setIsStatusDialogOpen(true);
-                                      }}>
-                                        <Check className="mr-2 h-4 w-4 text-green-600" />
-                                        Entregado
-                                      </DropdownMenuItem>
-                                    )}
+                                      {order.status !== "delivered" && (
+                                        <DropdownMenuItem
+                                          onClick={() => {
+                                            setSelectedOrder(order);
+                                            setNewStatus("delivered");
+                                            setIsStatusDialogOpen(true);
+                                          }}
+                                        >
+                                          <Check className="mr-2 h-4 w-4 text-green-600" />
+                                          Entregado
+                                        </DropdownMenuItem>
+                                      )}
 
-                                    {order.status !== 'canceled' && (
-                                      <DropdownMenuItem onClick={() => {
-                                        setSelectedOrder(order);
-                                        setNewStatus('canceled');
-                                        setIsStatusDialogOpen(true);
-                                      }}>
-                                        <XCircle className="mr-2 h-4 w-4 text-red-600" />
-                                        Cancelado
-                                      </DropdownMenuItem>
-                                    )}
-                                  </>
-                                )}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-              <Button 
-                className="bg-[#e3a765] hover:bg-[#e3a765]/90 mt-4 w-full"
-                onClick={() => setIsNewOrderOpen(true)}
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Crear Pedido
-              </Button>
+                                      {order.status !== "canceled" && (
+                                        <DropdownMenuItem
+                                          onClick={() => {
+                                            setSelectedOrder(order);
+                                            setNewStatus("canceled");
+                                            setIsStatusDialogOpen(true);
+                                          }}
+                                        >
+                                          <XCircle className="mr-2 h-4 w-4 text-red-600" />
+                                          Cancelado
+                                        </DropdownMenuItem>
+                                      )}
+                                    </>
+                                  )}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+                <Button
+                  className="bg-[#e3a765] hover:bg-[#e3a765]/90 mt-4 w-full"
+                  onClick={() => setIsNewOrderOpen(true)}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Crear Pedido
+                </Button>
               </>
             )}
           </Tabs>
@@ -623,7 +721,9 @@ export default function OrdersPage() {
       <Dialog open={isOrderDetailOpen} onOpenChange={setIsOrderDetailOpen}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
-            <DialogTitle>Detalle del Pedido #{viewingOrder?.id.toString().padStart(4, '0')}</DialogTitle>
+            <DialogTitle>
+              Detalle del Pedido #{viewingOrder?.id.toString().padStart(4, "0")}
+            </DialogTitle>
             <DialogDescription>
               Información completa del pedido
             </DialogDescription>
@@ -635,39 +735,65 @@ export default function OrdersPage() {
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <div>
-                    <h3 className="text-sm font-medium text-[#5d6d7c]">Cliente</h3>
-                    <p className="text-black">{clients?.find(c => c.id === viewingOrder.clientId)?.name || `Cliente #${viewingOrder.clientId}`}</p>
+                    <h3 className="text-sm font-medium text-[#5d6d7c]">
+                      Cliente
+                    </h3>
+                    <p className="text-black">
+                      {clients?.find((c) => c.id === viewingOrder.clientId)
+                        ?.name || `Cliente #${viewingOrder.clientId}`}
+                    </p>
                   </div>
                   <div>
-                    <h3 className="text-sm font-medium text-[#5d6d7c]">Fecha</h3>
-                    <p className="text-black">{formatOrderDate(viewingOrder.createdAt)}</p>
+                    <h3 className="text-sm font-medium text-[#5d6d7c]">
+                      Fecha
+                    </h3>
+                    <p className="text-black">
+                      {formatOrderDate(viewingOrder.createdAt)}
+                    </p>
                   </div>
                 </div>
 
                 <div className="flex justify-between mt-2">
                   <div>
-                    <h3 className="text-sm font-medium text-[#5d6d7c]">Estado</h3>
-                    <Badge variant="outline" className={getStatusBadge(viewingOrder.status).className}>
+                    <h3 className="text-sm font-medium text-[#5d6d7c]">
+                      Estado
+                    </h3>
+                    <Badge
+                      variant="outline"
+                      className={getStatusBadge(viewingOrder.status).className}
+                    >
                       {getStatusBadge(viewingOrder.status).icon}
                       {getStatusText(viewingOrder.status)}
                     </Badge>
                   </div>
                   <div>
-                    <h3 className="text-sm font-medium text-[#5d6d7c]">Total</h3>
-                    <p className="text-[#e3a765] font-bold text-lg">${viewingOrder.totalAmount?.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}</p>
+                    <h3 className="text-sm font-medium text-[#5d6d7c]">
+                      Total
+                    </h3>
+                    <p className="text-[#e3a765] font-bold text-lg">
+                      $
+                      {viewingOrder.totalAmount?.toLocaleString("es-AR", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      }) || "0.00"}
+                    </p>
                   </div>
                 </div>
               </div>
 
               {/* Order Items (this would come from the real data) */}
               <div>
-                <h3 className="text-sm font-medium text-[#5d6d7c] mb-2">Productos</h3>
+                <h3 className="text-sm font-medium text-[#5d6d7c] mb-2">
+                  Productos
+                </h3>
                 <div className="bg-gray-50 rounded-md p-4">
                   <div className="space-y-3">
                     {/* In a real app, we would fetch the order items here */}
                     <div className="flex justify-between items-center pb-2 border-b">
                       <div className="flex-1">
-                        <p className="font-medium">Sorrentinos de Queso y Jamón</p>
+                        <p className="font-medium">
+                          Sorrentinos de Queso y Jamón
+                        </p>
                         <p className="text-sm text-[#5d6d7c]">12 unid.</p>
                       </div>
                       <div className="text-center w-16">
@@ -708,8 +834,16 @@ export default function OrdersPage() {
                   <div className="mt-4 pt-2 border-t flex justify-end">
                     <div className="text-right">
                       <p className="text-sm text-[#5d6d7c]">Subtotal: $7,400</p>
-                      <p className="text-sm text-[#5d6d7c]">IVA (21%): $1,554</p>
-                      <p className="font-bold text-black mt-1">Total: ${viewingOrder.totalAmount?.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}</p>
+                      <p className="text-sm text-[#5d6d7c]">
+                        IVA (21%): $1,554
+                      </p>
+                      <p className="font-bold text-black mt-1">
+                        Total: $
+                        {viewingOrder.totalAmount?.toLocaleString("es-AR", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        }) || "0.00"}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -718,15 +852,15 @@ export default function OrdersPage() {
           )}
 
           <DialogFooter className="flex justify-between">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setIsOrderDetailOpen(false)}
             >
               Cerrar
             </Button>
 
-            {(isAdmin || viewingOrder?.status === 'pending') && (
-              <Button 
+            {(isAdmin || viewingOrder?.status === "pending") && (
+              <Button
                 className="bg-[#e3a765] hover:bg-[#e3a765]/90"
                 onClick={() => {
                   if (viewingOrder) {
@@ -750,7 +884,8 @@ export default function OrdersPage() {
           <DialogHeader>
             <DialogTitle>Cambiar Estado del Pedido</DialogTitle>
             <DialogDescription>
-              Selecciona el nuevo estado para el pedido #{selectedOrder?.id.toString().padStart(4, '0')}
+              Selecciona el nuevo estado para el pedido #
+              {selectedOrder?.id.toString().padStart(4, "0")}
             </DialogDescription>
           </DialogHeader>
 
@@ -792,19 +927,19 @@ export default function OrdersPage() {
           </div>
 
           <DialogFooter>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setIsStatusDialogOpen(false)}
             >
               Cancelar
             </Button>
-            <Button 
+            <Button
               className="bg-[#e3a765] hover:bg-[#e3a765]/90"
               onClick={() => {
                 if (selectedOrder) {
                   updateOrderStatusMutation.mutate({
                     id: selectedOrder.id,
-                    status: newStatus
+                    status: newStatus,
                   });
                 }
               }}
@@ -820,18 +955,21 @@ export default function OrdersPage() {
       </Dialog>
 
       {/* New Order Dialog */}
-      <Dialog open={isNewOrderOpen} onOpenChange={(open) => {
-        if (!open) {
-          setIsNewOrderOpen(false);
-          // Reset form when closing
-          setFormData({
-            clientId: "",
-            products: [{ productId: "", quantity: 1 }],
-            status: "pending" as OrderStatus,
-          });
-          setOrderItems([{ productId: "", quantity: 1 }]);
-        }
-      }}>
+      <Dialog
+        open={isNewOrderOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setIsNewOrderOpen(false);
+            // Reset form when closing
+            setFormData({
+              clientId: "",
+              products: [{ productId: "", quantity: 1 }],
+              status: "pending" as OrderStatus,
+            });
+            setOrderItems([{ productId: "", quantity: 1 }]);
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Nuevo Pedido</DialogTitle>
@@ -843,13 +981,15 @@ export default function OrdersPage() {
           <div className="py-4 space-y-4">
             {/* Client selection */}
             <div>
-              <Label htmlFor="client" className="text-[#5d6d7c]">Cliente*</Label>
+              <Label htmlFor="client" className="text-[#5d6d7c]">
+                Cliente*
+              </Label>
               <Select
                 value={formData.clientId}
                 onValueChange={(value) => {
                   setFormData({
                     ...formData,
-                    clientId: value
+                    clientId: value,
                   });
                 }}
               >
@@ -857,13 +997,13 @@ export default function OrdersPage() {
                   <SelectValue placeholder="Selecciona un cliente" />
                 </SelectTrigger>
                 <SelectContent>
-                  {clients?.map(client => (
+                  {clients?.map((client) => (
                     <SelectItem key={client.id} value={client.id.toString()}>
                       {client.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
-                </Select>
+              </Select>
             </div>
 
             {/* Products selection */}
@@ -873,39 +1013,61 @@ export default function OrdersPage() {
                 <CardContent className="p-4">
                   <div className="space-y-3">
                     {orderItems.map((item, index) => (
-                      <div key={index} className="flex items-end gap-2">                      <div key={index} className="flex items-end gap-2">
+                      <div key={index} className="flex items-end gap-2">
                         <div className="flex-1">
-                          <Label htmlFor={`product-${index}`} className="text-xs text-[#5d6d7c]">Producto</Label>
+                          <Label
+                            htmlFor={`product-${index}`}
+                            className="text-xs text-[#5d6d7c]"
+                          >
+                            Producto
+                          </Label>
                           <Select
                             value={item.productId}
-                            onValueChange={(value) => updateOrderItem(index, 'productId', value)}
+                            onValueChange={(value) =>
+                              updateOrderItem(index, "productId", value)
+                            }
                           >
                             <SelectTrigger>
                               <SelectValue placeholder="Selecciona un producto" />
                             </SelectTrigger>
                             <SelectContent>
-                              {products?.map(product => (
-                                <SelectItem key={product.id} value={product.id.toString()}>
-                                  {product.name} - ${product.price} ({product.unitSize}) - Stock: {product.stock}
+                              {products?.map((product) => (
+                                <SelectItem
+                                  key={product.id}
+                                  value={product.id.toString()}
+                                >
+                                  {product.name} - ${product.price} (
+                                  {product.unitSize}) - Stock: {product.stock}
                                 </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
                         </div>
                         <div className="w-20">
-                          <Label htmlFor={`quantity-${index}`} className="text-xs text-[#5d6d7c]">Cantidad</Label>
-                          <Input 
+                          <Label
+                            htmlFor={`quantity-${index}`}
+                            className="text-xs text-[#5d6d7c]"
+                          >
+                            Cantidad
+                          </Label>
+                          <Input
                             id={`quantity-${index}`}
-                            type="number" 
-                            min="1" 
+                            type="number"
+                            min="1"
                             max={item.product?.stock || 999} // Add max based on stock
                             value={item.quantity}
-                            onChange={(e) => updateOrderItem(index, 'quantity', parseInt(e.target.value) || 1)}
+                            onChange={(e) =>
+                              updateOrderItem(
+                                index,
+                                "quantity",
+                                parseInt(e.target.value) || 1,
+                              )
+                            }
                           />
                         </div>
-                        <Button 
-                          variant="outline" 
-                          size="icon" 
+                        <Button
+                          variant="outline"
+                          size="icon"
                           className="shrink-0"
                           onClick={() => removeProductFromOrder(index)}
                         >
@@ -915,9 +1077,9 @@ export default function OrdersPage() {
                     ))}
                   </div>
 
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     className="mt-3 w-full"
                     onClick={addProductToOrder}
                   >
@@ -930,23 +1092,47 @@ export default function OrdersPage() {
 
             {/* Order summary */}
             <div>
-              <h3 className="text-sm font-medium text-[#5d6d7c] mb-2">Resumen</h3>
+              <h3 className="text-sm font-medium text-[#5d6d7c] mb-2">
+                Resumen
+              </h3>
               <div className="bg-gray-50 rounded-md p-4">
                 {(() => {
                   const { subtotal, iva, total } = calculateTotal();
                   return (
                     <>
                       <div className="flex justify-between">
-                        <span className="text-sm text-[#5d6d7c]">Subtotal:</span>
-                        <span className="font-medium">${subtotal.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        <span className="text-sm text-[#5d6d7c]">
+                          Subtotal:
+                        </span>
+                        <span className="font-medium">
+                          $
+                          {subtotal.toLocaleString("es-AR", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </span>
                       </div>
                       <div className="flex justify-between mt-1">
-                        <span className="text-sm text-[#5d6d7c]">IVA (21%):</span>
-                        <span className="font-medium">${iva.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        <span className="text-sm text-[#5d6d7c]">
+                          IVA (21%):
+                        </span>
+                        <span className="font-medium">
+                          $
+                          {iva.toLocaleString("es-AR", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </span>
                       </div>
                       <div className="flex justify-between mt-2 pt-2 border-t">
                         <span className="font-medium">Total:</span>
-                        <span className="font-bold text-[#e3a765]">${total.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        <span className="font-bold text-[#e3a765]">
+                          $
+                          {total.toLocaleString("es-AR", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </span>
                       </div>
                     </>
                   );
@@ -956,13 +1142,10 @@ export default function OrdersPage() {
           </div>
 
           <DialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => setIsNewOrderOpen(false)}
-            >
+            <Button variant="outline" onClick={() => setIsNewOrderOpen(false)}>
               Cancelar
             </Button>
-            <Button 
+            <Button
               className="bg-[#e3a765] hover:bg-[#e3a765]/90"
               onClick={() => createOrderMutation.mutate()}
               disabled={createOrderMutation.isPending}
