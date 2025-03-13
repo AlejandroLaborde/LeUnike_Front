@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
@@ -51,6 +51,7 @@ import {
   ArrowUpDown,
   Filter,
   RefreshCw,
+  UserCog,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -119,6 +120,7 @@ type Order = {
   createdAt: string;
   client?: Client;
   items?: OrderItem[];
+  vendorName?: string; // Added vendorName property
 };
 
 export default function OrdersPage() {
@@ -184,6 +186,9 @@ export default function OrdersPage() {
       const res = await apiRequest("GET", "/api/orders");
       return (await res.json()) as Order[];
     },
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    staleTime: 0,
   });
 
   // Fetch clients for order form
@@ -344,38 +349,55 @@ export default function OrdersPage() {
   });
 
   // Filter, sort, and group orders
-  const processedOrders = orders
-    ? orders
-        // First apply client filter if present
-        .filter((order) =>
-          clientFilter ? order.clientId === clientFilter : true,
-        )
-        // Then apply search and status filters
-        .filter((order) => {
-          // Client name search will be added once we have client details
-          const matchesSearch = order.id.toString().includes(searchTerm);
-          const matchesStatus =
-            statusFilter === "all" || order.status === statusFilter;
-          return matchesSearch && matchesStatus;
-        })
-        // Sort by date
-        .sort((a, b) => {
-          const dateA = new Date(a.createdAt).getTime();
-          const dateB = new Date(b.createdAt).getTime();
-          return sortDirection === "asc" ? dateA - dateB : dateB - dateA;
-        })
-    : [];
+  const processedOrders = useMemo(() => {
+    if (!orders) return [];
 
-  // Group orders by status for the tabs view
-  const ordersByStatus = {
-    all: processedOrders,
-    pending: processedOrders.filter((order) => order.status === "pending"),
-    processing: processedOrders.filter(
-      (order) => order.status === "processing",
-    ),
-    delivered: processedOrders.filter((order) => order.status === "delivered"),
-    canceled: processedOrders.filter((order) => order.status === "canceled"),
-  };
+    return orders
+      .filter((order) => {
+        // Apply status filter
+        if (statusFilter !== "all" && order.status !== statusFilter) {
+          return false;
+        }
+
+        // Apply client filter if present
+        if (clientFilter && order.clientId !== clientFilter) {
+          return false;
+        }
+
+        // Apply search filter (order number)
+        if (searchTerm && !order.id.toString().includes(searchTerm)) {
+          return false;
+        }
+
+        return true;
+      })
+      .sort((a, b) => {
+        // Apply sorting direction
+        if (sortDirection === "asc") {
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        } else {
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        }
+      });
+  }, [orders, statusFilter, clientFilter, searchTerm, sortDirection]);
+
+  // Calculate counts for each status (using allOrders to ensure accurate counts)
+  const statusCounts = useMemo(() => {
+    const counts = {
+      all: orders?.length || 0,
+      pending: 0,
+      processing: 0,
+      delivered: 0,
+      canceled: 0,
+    };
+
+    orders?.forEach((order) => {
+      counts[order.status]++;
+    });
+
+    return counts;
+  }, [orders]);
+
 
   // Helper function to format date
   const formatOrderDate = (dateString: string) => {
@@ -430,6 +452,13 @@ export default function OrdersPage() {
 
   // Create initial tab value based on URL query param or default to 'all'
   const initialTab = statusFilter !== "all" ? statusFilter : "all";
+
+  const formatCurrency = (amount: number | undefined) => {
+    return amount?.toLocaleString("es-AR", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }) || "0.00";
+  };
 
   return (
     <div>
@@ -514,12 +543,12 @@ export default function OrdersPage() {
         </CardHeader>
 
         <CardContent>
-          <Tabs defaultValue={initialTab} className="w-full">
+          <Tabs defaultValue={initialTab} className="w-full" onValueChange={value => setStatusFilter(value as any)}>
             <TabsList className="grid grid-cols-5 mb-6">
               <TabsTrigger value="all" onClick={() => setStatusFilter("all")}>
                 Todos{" "}
                 <Badge variant="outline" className="ml-2 bg-gray-100">
-                  {ordersByStatus.all.length}
+                  {statusCounts.all}
                 </Badge>
               </TabsTrigger>
               <TabsTrigger
@@ -528,7 +557,7 @@ export default function OrdersPage() {
               >
                 Pendientes{" "}
                 <Badge variant="outline" className="ml-2 bg-yellow-100">
-                  {ordersByStatus.pending.length}
+                  {statusCounts.pending}
                 </Badge>
               </TabsTrigger>
               <TabsTrigger
@@ -537,7 +566,7 @@ export default function OrdersPage() {
               >
                 En proceso{" "}
                 <Badge variant="outline" className="ml-2 bg-blue-100">
-                  {ordersByStatus.processing.length}
+                  {statusCounts.processing}
                 </Badge>
               </TabsTrigger>
               <TabsTrigger
@@ -546,7 +575,7 @@ export default function OrdersPage() {
               >
                 Entregados{" "}
                 <Badge variant="outline" className="ml-2 bg-green-100">
-                  {ordersByStatus.delivered.length}
+                  {statusCounts.delivered}
                 </Badge>
               </TabsTrigger>
               <TabsTrigger
@@ -555,7 +584,7 @@ export default function OrdersPage() {
               >
                 Cancelados{" "}
                 <Badge variant="outline" className="ml-2 bg-red-100">
-                  {ordersByStatus.canceled.length}
+                  {statusCounts.canceled}
                 </Badge>
               </TabsTrigger>
             </TabsList>
@@ -595,6 +624,7 @@ export default function OrdersPage() {
                       <TableRow>
                         <TableHead className="w-[100px]">Nº Pedido</TableHead>
                         <TableHead>Cliente</TableHead>
+                        {isAdmin && <TableHead>Vendedor</TableHead>}
                         <TableHead>Total</TableHead>
                         <TableHead>Estado</TableHead>
                         <TableHead>Fecha</TableHead>
@@ -618,12 +648,17 @@ export default function OrdersPage() {
                                 <span>{clientName}</span>
                               </div>
                             </TableCell>
+                            {isAdmin && (
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  <UserCog className="h-4 w-4 text-[#5d6d7c]" />
+                                  <span>{order.vendorName || `Vendedor #${order.vendorId}`}</span>
+                                </div>
+                              </TableCell>
+                            )}
                             <TableCell className="font-medium text-[#e3a765]">
                               $
-                              {order.totalAmount?.toLocaleString("es-AR", {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              }) || "0.00"}
+                              {formatCurrency(order.totalAmount)}
                             </TableCell>
                             <TableCell>
                               <Badge
@@ -794,10 +829,7 @@ export default function OrdersPage() {
                     </h3>
                     <p className="text-[#e3a765] font-bold text-lg">
                       $
-                      {viewingOrder.totalAmount?.toLocaleString("es-AR", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      }) || "0.00"}
+                      {formatCurrency(viewingOrder.totalAmount)}
                     </p>
                   </div>
                 </div>
@@ -861,10 +893,7 @@ export default function OrdersPage() {
                       </p>
                       <p className="font-bold text-black mt-1">
                         Total: $
-                        {viewingOrder.totalAmount?.toLocaleString("es-AR", {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        }) || "0.00"}
+                        {formatCurrency(viewingOrder.totalAmount)}
                       </p>
                     </div>
                   </div>
@@ -1127,10 +1156,7 @@ export default function OrdersPage() {
                         </span>
                         <span className="font-medium">
                           $
-                          {subtotal.toLocaleString("es-AR", {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
+                          {formatCurrency(subtotal)}
                         </span>
                       </div>
                       <div className="flex justify-between mt-1">
@@ -1139,20 +1165,14 @@ export default function OrdersPage() {
                         </span>
                         <span className="font-medium">
                           $
-                          {iva.toLocaleString("es-AR", {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
+                          {formatCurrency(iva)}
                         </span>
                       </div>
                       <div className="flex justify-between mt-2 pt-2 border-t">
                         <span className="font-medium">Total:</span>
                         <span className="font-bold text-[#e3a765]">
                           $
-                          {total.toLocaleString("es-AR", {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
+                          {formatCurrency(total)}
                         </span>
                       </div>
                     </>

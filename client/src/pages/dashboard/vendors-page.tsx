@@ -1,52 +1,44 @@
-import { useState } from "react";
-import { motion } from "framer-motion";
-import { useAuth } from "@/hooks/use-auth";
+import React, { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import axios from "axios";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
-  CardTitle,
-  CardDescription, 
-  CardFooter 
-} from "@/components/ui/card";
+import { useAuth } from "@/hooks/use-auth";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogFooter, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger, 
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
-import { Switch } from "@/components/ui/switch";
-import { 
-  MoreHorizontal, 
-  Plus, 
-  Search, 
-  Edit, 
-  Trash, 
-  Loader2,
-  User,
-  UserCheck,
-  UserX,
-  Filter,
-  UserPlus
-} from "lucide-react";
-import { 
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { UserPlus, MoreHorizontal, ShieldAlert } from "lucide-react";
+import { DashboardTitle } from "@/components/dashboard/title";
+import { SkeletonTable } from "@/components/skeleton-table";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
+import { motion } from "framer-motion";
+import { formatDate } from "@/lib/utils";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableCaption
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -57,38 +49,68 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
-import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Loader2, Search } from "lucide-react";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {Textarea} from "@/components/ui/textarea";
 
-type UserRole = 'super_admin' | 'admin' | 'vendor';
 
 interface User {
   id: number;
   username: string;
   name: string;
-  role: UserRole;
+  email: string;
+  phone: string;
+  role: "vendor" | "admin" | "super_admin";
   active: boolean;
-  createdAt: string;
+  createdAt?: string;
 }
+
+const formSchema = z.object({
+  username: z.string().min(3, "El usuario debe tener al menos 3 caracteres"),
+  password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
+  name: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
+  email: z.string().email("Correo electrónico inválido"),
+  phone: z.string().optional(),
+  role: z.enum(["vendor", "admin", "super_admin"]),
+  active: z.boolean().default(true),
+});
 
 export default function VendorsPage() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [open, setOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState<"all" | "active" | "inactive">("all");
   const queryClient = useQueryClient();
 
-  // Check if current user has admin permissions
-  const isSuperAdmin = user?.role === 'super_admin';
-  const isAdmin = user?.role === 'admin' || isSuperAdmin;
+  // Si el usuario no es admin o super_admin, mostrar acceso restringido
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
 
-  // If not admin, show access denied
   if (!isAdmin) {
     return (
       <div className="flex flex-col items-center justify-center py-12">
-        <UserX className="h-16 w-16 text-red-500 mb-4" />
+        <ShieldAlert className="h-16 w-16 text-red-500 mb-4" />
         <h2 className="text-2xl font-bold text-black mb-2">Acceso denegado</h2>
         <p className="text-[#5d6d7c] text-center max-w-md mb-4">
-          No tienes permisos para acceder a la gestión de vendedores. Esta sección está reservada para administradores.
+          No tienes permisos para acceder a la gestión de vendedores. Esta sección está reservada para Administradores.
         </p>
         <Button 
           variant="outline" 
@@ -100,577 +122,602 @@ export default function VendorsPage() {
     );
   }
 
-  // States
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterStatus, setFilterStatus] = useState<"all" | "active" | "inactive">("all");
-  const [filterRole, setFilterRole] = useState<"all" | "admin" | "vendor">("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [editUser, setEditUser] = useState<User | null>(null);
-  const [userToDelete, setUserToDelete] = useState<User | null>(null);
-
-  // Form state
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [formData, setFormData] = useState({
     username: "",
-    name: "",
     password: "",
-    role: "vendor" as UserRole,
-    active: true
+    name: "",
+    email: "",
+    phone: "",
+    role: "vendor" as "vendor" | "admin" | "super_admin",
+    active: true,
   });
 
-  // Fetch users who are vendors
-  const { data: users = [], isLoading, refetch } = useQuery({
-    queryKey: ['vendors'],
-    queryFn: async () => {
-      try {
-        const res = await apiRequest('GET', '/api/users');
-        if (!res.ok) {
-          throw new Error('Error al obtener vendedores: ' + res.statusText);
-        }
-        const data = await res.json();
-        console.log("Vendors data fetched:", data);
-        if (Array.isArray(data)) {
-          return data.filter(user => 
-            user.role === 'vendor' || 
-            user.role === 'admin'
-          );
-        }
-        return [];
-      } catch (error) {
-        console.error("Error fetching vendors:", error);
-        return [];
-      }
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      username: "",
+      password: "",
+      name: "",
+      email: "",
+      phone: "",
+      role: "vendor",
+      active: true,
     },
+  });
+
+  const { data: allUsers, isLoading, error } = useQuery({
+    queryKey: ["users"],
+    queryFn: async () => {
+      const response = await fetch("/api/users");
+      if (!response.ok) {
+        throw new Error("Error fetching vendors");
+      }
+      const data = await response.json();
+      return data;
+    },
+    refetchOnMount: true,
     refetchOnWindowFocus: true,
-    refetchInterval: 30000 // Refresh every 30 seconds
+    staleTime: 0,
+  });
+
+  // Filtrar solo los usuarios con rol de vendedor
+  const vendors = allUsers?.filter(user => user.role === 'vendor') || [];
+
+  if (error) {
+    toast({
+      variant: "destructive",
+      title: "Error",
+      description: "No se pudieron cargar los vendedores",
+    });
+  }
+
+  const filteredVendors = vendors?.filter((vendor: User) => {
+    if (!searchTerm) return true;
+    return (
+      vendor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      vendor.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      vendor.email?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
   });
 
 
-  // Mutations
-  const createUserMutation = useMutation({
-    mutationFn: async (data: typeof formData) => {
-      const res = await apiRequest('POST', '/api/users', data);
-      return await res.json();
+  const addUserMutation = useMutation({
+    mutationFn: async (userData: z.infer<typeof formSchema>) => {
+      // Asegurarse de que siempre sea un vendedor
+      const newUserData = { ...userData, role: "vendor" };
+      const response = await axios.post("/api/register", newUserData);
+      return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/users/vendors'] });
-      setIsAddDialogOpen(false);
-      resetForm();
       toast({
         title: "Usuario creado",
-        description: "El usuario ha sido creado correctamente",
+        description: "El usuario ha sido creado exitosamente.",
       });
+      setIsAddDialogOpen(false);
+      form.reset();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
-        title: "Error al crear el usuario",
-        description: error.message,
+        title: "Error",
+        description: error.response?.data?.message || "Hubo un error al crear el usuario.",
         variant: "destructive",
       });
-    }
+    },
   });
 
   const updateUserMutation = useMutation({
-    mutationFn: async (data: { id: number, userData: Partial<typeof formData> }) => {
-      const res = await apiRequest('PUT', `/api/users/${data.id}`, data.userData);
-      return await res.json();
+    mutationFn: async (userData: Partial<User>) => {
+      const response = await axios.put(`/api/users/${currentUserId}`, userData);
+      return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/users/vendors'] });
-      setEditUser(null);
-      resetForm();
       toast({
         title: "Usuario actualizado",
-        description: "El usuario ha sido actualizado correctamente",
+        description: "El usuario ha sido actualizado exitosamente.",
       });
+      setIsEditDialogOpen(false);
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
-        title: "Error al actualizar el usuario",
-        description: error.message,
+        title: "Error",
+        description: error.response?.data?.message || "Hubo un error al actualizar el usuario.",
         variant: "destructive",
       });
-    }
+    },
   });
 
   const deleteUserMutation = useMutation({
     mutationFn: async (id: number) => {
-      const res = await apiRequest('DELETE', `/api/users/${id}`);
-      return await res.json();
+      const response = await axios.delete(`/api/users/${id}`);
+      return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/users/vendors'] });
-      setIsDeleteDialogOpen(false);
-      setUserToDelete(null);
       toast({
-        title: "Usuario desactivado",
-        description: "El usuario ha sido desactivado correctamente",
+        title: "Usuario eliminado",
+        description: "El usuario ha sido eliminado exitosamente.",
       });
+      setIsDeleteDialogOpen(false);
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
-        title: "Error al desactivar el usuario",
-        description: error.message,
+        title: "Error",
+        description: error.response?.data?.message || "Hubo un error al eliminar el usuario.",
         variant: "destructive",
       });
-    }
+    },
   });
 
-  // Handlers
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+  const onSubmit = (values: z.infer<typeof formSchema>) => {
+    addUserMutation.mutate(values);
   };
 
-  const handleSwitchChange = (checked: boolean) => {
-    setFormData({
-      ...formData,
-      active: checked
-    });
-  };
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
 
-  const handleSelectChange = (value: string) => {
-    setFormData({
-      ...formData,
-      role: value as UserRole
-    });
+    const submitData = { ...formData };
+    if (isEditDialogOpen && !submitData.password) {
+      delete submitData.password;
+    }
+
+    if (currentUserId) {
+      updateUserMutation.mutate(submitData);
+    }
   };
 
   const resetForm = () => {
     setFormData({
       username: "",
-      name: "",
       password: "",
+      name: "",
+      email: "",
+      phone: "",
       role: "vendor",
-      active: true
+      active: true,
     });
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (editUser) {
-      // For edit, only include changed fields and omit password if empty
-      const changedData: Partial<typeof formData> = {};
-      if (formData.name !== editUser.name) changedData.name = formData.name;
-      if (formData.username !== editUser.username) changedData.username = formData.username;
-      if (formData.password) changedData.password = formData.password;
-      if (formData.role !== editUser.role) changedData.role = formData.role;
-      if (formData.active !== editUser.active) changedData.active = formData.active;
-
-      updateUserMutation.mutate({ id: editUser.id, userData: changedData });
-    } else {
-      createUserMutation.mutate(formData);
-    }
   };
 
   const openEditDialog = (user: User) => {
-    setEditUser(user);
     setFormData({
       username: user.username,
+      password: "",
       name: user.name,
-      password: "", // Don't show password, will only update if new one is entered
-      role: user.role,
-      active: user.active
+      email: user.email,
+      phone: user.phone || "",
+      role: user.role as "vendor" | "admin" | "super_admin",
+      active: user.active,
     });
+    setCurrentUserId(user.id);
+    setIsEditDialogOpen(true);
   };
 
-  const openDeleteDialog = (user: User) => {
-    setUserToDelete(user);
+  const openDeleteDialog = (id: number) => {
+    setCurrentUserId(id);
     setIsDeleteDialogOpen(true);
   };
 
-  // Filter users
-  const filteredUsers = users
-    ? users
-        .filter(user => {
-          // Filter out current user (can't edit self)
-          if (user.id === user?.id) return false;
-
-          // Apply search filter
-          const matchesSearch = 
-            user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            user.username.toLowerCase().includes(searchTerm.toLowerCase());
-
-          // Apply status filter
-          const matchesStatus = 
-            filterStatus === 'all' ? true :
-            filterStatus === 'active' ? user.active :
-            !user.active;
-
-          // Apply role filter
-          const matchesRole = 
-            filterRole === 'all' ? true :
-            filterRole === 'admin' ? user.role === 'admin' || user.role === 'super_admin' :
-            user.role === 'vendor';
-
-          return matchesSearch && matchesStatus && matchesRole;
-        })
-    : [];
-
-  // Helper function to get role label
-  const getRoleLabel = (role: UserRole) => {
-    switch(role) {
-      case 'super_admin': return 'Super Administrador';
-      case 'admin': return 'Administrador';
-      case 'vendor': return 'Vendedor';
-      default: return role;
-    }
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // Helper function to get role badge color
-  const getRoleBadgeColor = (role: UserRole) => {
-    switch(role) {
-      case 'super_admin': return 'bg-[#5d6d7c] text-white';
-      case 'admin': return 'bg-[#e3a765] text-white';
-      case 'vendor': return 'bg-[#fdd000]/20 text-[#e3a765]';
-      default: return 'bg-gray-200 text-gray-800';
-    }
+  const handleSelectChange = (name: string, value: string) => {
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // Mostrar un mensaje de carga si está cargando
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="flex flex-col items-center">
-          <div className="w-12 h-12 border-4 border-[#e3a765] border-t-transparent rounded-full animate-spin"></div>
-          <p className="mt-4 text-[#5d6d7c]">Cargando vendedores...</p>
-        </div>
-      </div>
-    );
-  }
+  const handleSwitchChange = (name: string, checked: boolean) => {
+    setFormData(prev => ({ ...prev, [name]: checked }));
+  };
 
   return (
-    <div>
-      {/* Header and filters */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 space-y-4 md:space-y-0">
-        <div>
-          <h1 className="text-2xl font-bold text-black mb-1">Vendedores</h1>
-          <p className="text-[#5d6d7c]">Gestiona los vendedores del sistema</p>
-        </div>
+    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+      <DashboardTitle
+        title="Vendedores"
+        description="Gestiona los usuarios del sistema y sus permisos"
+        icon={<UserPlus className="h-6 w-6 text-[#e3a765]" />}
+      />
 
-        {isSuperAdmin && (
-          <Button 
-            onClick={() => {
-              resetForm();
-              setIsAddDialogOpen(true);
-            }}
-            className="bg-[#e3a765] hover:bg-[#e3a765]/90"
-          >
-            <UserPlus className="mr-2 h-4 w-4" />
-            Nuevo Usuario
-          </Button>
-        )}
-      </div>
-
-      {/* Filters */}
-      <div className="bg-white rounded-lg shadow p-4 mb-6">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#5d6d7c]" size={18} />
-            <Input
-              placeholder="Buscar por nombre o usuario..."
-              className="pl-10"
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-            />
-          </div>
-
-          <div className="flex gap-2">
-            <Select
-              value={filterStatus}
-              onValueChange={(value) => setFilterStatus(value as typeof filterStatus)}
-            >
-              <SelectTrigger className="w-[160px]">
-                <SelectValue placeholder="Estado" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="active">Activos</SelectItem>
-                <SelectItem value="inactive">Inactivos</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select
-              value={filterRole}
-              onValueChange={(value) => setFilterRole(value as typeof filterRole)}
-            >
-              <SelectTrigger className="w-[160px]">
-                <SelectValue placeholder="Rol" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos los roles</SelectItem>
-                <SelectItem value="admin">Administradores</SelectItem>
-                <SelectItem value="vendor">Vendedores</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      </div>
-
-      {/* Users Table */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle>Usuarios</CardTitle>
-          <CardDescription>
-            Lista de usuarios con acceso al sistema
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex justify-center items-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-[#e3a765]" />
+      <div className="grid gap-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center space-y-0">
+            <CardTitle className="text-xl">Vendedores</CardTitle>
+            <div className="ml-auto flex space-x-2">
+              <Button
+                variant="default"
+                className="bg-[#e3a765] hover:bg-[#e3a765]/90 text-white ml-auto flex items-center"
+                onClick={() => setIsAddDialogOpen(true)}
+              >
+                <UserPlus className="mr-2 h-4 w-4" />
+                Nuevo Usuario
+              </Button>
             </div>
-          ) : filteredUsers.length === 0 ? (
-            <div className="text-center py-12">
-              <User className="h-12 w-12 text-[#5d6d7c] mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-black mb-2">No se encontraron usuarios</h3>
-              <p className="text-[#5d6d7c] max-w-md mx-auto">
-                {searchTerm || filterStatus !== 'all' || filterRole !== 'all'
-                  ? "No hay resultados para los filtros aplicados."
-                  : "No hay usuarios registrados en el sistema."}
-              </p>
-              {isSuperAdmin && (
-                <Button 
-                  onClick={() => {
-                    resetForm();
-                    setIsAddDialogOpen(true);
-                  }}
-                  variant="outline"
-                  className="mt-4"
-                >
-                  <UserPlus className="mr-2 h-4 w-4" />
-                  Agregar vendedor
-                </Button>
-              )}
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center py-4">
+              <Input
+                placeholder="Buscar por nombre o usuario..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="max-w-sm"
+              />
             </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left font-medium text-[#5d6d7c] p-3">Nombre</th>
-                    <th className="text-left font-medium text-[#5d6d7c] p-3">Usuario</th>
-                    <th className="text-left font-medium text-[#5d6d7c] p-3">Rol</th>
-                    <th className="text-left font-medium text-[#5d6d7c] p-3">Estado</th>
-                    <th className="text-left font-medium text-[#5d6d7c] p-3">Fecha registro</th>
-                    <th className="text-right font-medium text-[#5d6d7c] p-3">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredUsers.map((user, index) => (
-                    <motion.tr 
-                      key={user.id}
-                      className="border-b hover:bg-gray-50"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                    >
-                      <td className="p-3">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-[#e3a765]/10 flex items-center justify-center text-[#e3a765]">
-                            <User size={16} />
+
+            {isLoading ? (
+              <SkeletonTable columns={7} rows={5} />
+            ) : (
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nombre</TableHead>
+                      <TableHead>Usuario</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Rol</TableHead>
+                      <TableHead>Estado</TableHead>
+                      <TableHead>Fecha registro</TableHead>
+                      <TableHead className="text-right">Acciones</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredVendors?.map((vendor) => (
+                      <motion.tr
+                        key={vendor.id}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.3 }}
+                        className="border-b transition-colors hover:bg-muted/50"
+                      >
+                        <TableCell className="font-medium">
+                          <div className="flex items-center">
+                            <span className="font-semibold text-[#e3a765] mr-2">👤</span>
+                            {vendor.name}
                           </div>
-                          <span className="font-medium text-black">{user.name}</span>
-                        </div>
-                      </td>
-                      <td className="p-3 text-[#5d6d7c]">{user.username}</td>
-                      <td className="p-3">
-                        <Badge variant="outline" className={`${getRoleBadgeColor(user.role)}`}>
-                          {getRoleLabel(user.role)}
-                        </Badge>
-                      </td>
-                      <td className="p-3">
-                        {user.active ? (
-                          <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">
-                            <UserCheck size={14} className="mr-1" />
-                            Activo
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200">
-                            <UserX size={14} className="mr-1" />
-                            Inactivo
-                          </Badge>
-                        )}
-                      </td>
-                      <td className="p-3 text-[#5d6d7c]">
-                        {format(new Date(user.createdAt), 'dd/MM/yyyy', { locale: es })}
-                      </td>
-                      <td className="p-3 text-right">
-                        {isSuperAdmin && (
+                        </TableCell>
+                        <TableCell>{vendor.username}</TableCell>
+                        <TableCell>{vendor.email || "-"}</TableCell>
+                        <TableCell>
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            vendor.role === "super_admin"
+                              ? "bg-blue-100 text-blue-800"
+                              : vendor.role === "admin"
+                              ? "bg-purple-100 text-purple-800"
+                              : "bg-yellow-100 text-yellow-800"
+                          }`}>
+                            {vendor.role === "super_admin"
+                              ? "Super Administrador"
+                              : vendor.role === "admin"
+                              ? "Administrador"
+                              : "Vendedor"}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            vendor.active
+                              ? "bg-green-100 text-green-800"
+                              : "bg-red-100 text-red-800"
+                          }`}>
+                            {vendor.active ? "Activo" : "Inactivo"}
+                          </span>
+                        </TableCell>
+                        <TableCell>{vendor.createdAt ? formatDate(new Date(vendor.createdAt)) : "-"}</TableCell>
+                        <TableCell className="text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm">
-                                <MoreHorizontal size={16} />
+                              <Button variant="ghost" className="h-8 w-8 p-0">
+                                <span className="sr-only">Abrir menú</span>
+                                <MoreHorizontal className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuLabel>Acciones</DropdownMenuLabel>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem onClick={() => openEditDialog(user)}>
-                                <Edit className="mr-2 h-4 w-4" />
+                              <DropdownMenuItem onClick={() => openEditDialog(vendor)}>
                                 Editar
                               </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                onClick={() => openDeleteDialog(user)}
-                                className="text-red-600"
-                              >
-                                <Trash className="mr-2 h-4 w-4" />
-                                {user.active ? 'Desactivar' : 'Eliminar'}
+                              <DropdownMenuItem className="text-red-600" onClick={() => openDeleteDialog(vendor.id)}>
+                                Eliminar
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
-                        )}
-                      </td>
-                    </motion.tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                        </TableCell>
+                      </motion.tr>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
-      {/* Add/Edit User Dialog */}
-      <Dialog open={isAddDialogOpen || !!editUser} onOpenChange={(open) => {
-        if (!open) {
-          setIsAddDialogOpen(false);
-          setEditUser(null);
-        }
-      }}>
-        <DialogContent className="sm:max-w-[500px]">
+      {/* Add User Dialog */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent className="sm:max-w-[525px]">
           <DialogHeader>
-            <DialogTitle>{editUser ? 'Editar Usuario' : 'Nuevo Usuario'}</DialogTitle>
+            <DialogTitle>Agregar Nuevo Usuario</DialogTitle>
             <DialogDescription>
-              {editUser 
-                ? 'Modifica los datos del usuario seleccionado.' 
-                : 'Completa los campos para crear un nuevo usuario.'}
+              Crea un nuevo usuario para el sistema.
             </DialogDescription>
           </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="username"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Usuario</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Nombre de usuario" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Contraseña</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="password"
+                        placeholder="Contraseña"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nombre Completo</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Nombre completo" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Correo Electrónico</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="email"
+                        placeholder="correo@ejemplo.com"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Teléfono (opcional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Teléfono" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="role"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Rol</FormLabel>
+                    <Input value="vendor" disabled/>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="active"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                    <div className="space-y-0.5">
+                      <FormLabel>Activo</FormLabel>
+                      <FormDescription>
+                        El usuario podrá acceder al sistema.
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    form.reset();
+                    setIsAddDialogOpen(false);
+                  }}
+                >
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={addUserMutation.isPending}>
+                  {addUserMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Agregando...
+                    </>
+                  ) : (
+                    "Agregar Usuario"
+                  )}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
 
-          <form onSubmit={handleSubmit}>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-1 gap-4">
-                <div>
-                  <Label htmlFor="name" className="text-[#5d6d7c]">Nombre completo*</Label>
-                  <Input 
-                    id="name" 
-                    name="name" 
-                    placeholder="Ej: Juan Pérez"
-                    value={formData.name} 
-                    onChange={handleInputChange} 
-                    required 
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="username" className="text-[#5d6d7c]">Nombre de usuario*</Label>
-                  <Input 
-                    id="username" 
-                    name="username" 
-                    placeholder="Ej: jperez"
-                    value={formData.username} 
-                    onChange={handleInputChange} 
-                    required 
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="password" className="text-[#5d6d7c]">
-                    {editUser ? 'Contraseña (dejar en blanco para no cambiar)' : 'Contraseña*'}
-                  </Label>
-                  <Input 
-                    id="password" 
-                    name="password" 
-                    type="password" 
-                    placeholder="Contraseña segura"
-                    value={formData.password} 
-                    onChange={handleInputChange} 
-                    required={!editUser} 
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="role" className="text-[#5d6d7c]">Rol*</Label>
-                  <Select 
-                    value={formData.role} 
-                    onValueChange={handleSelectChange}
-                    disabled={!isSuperAdmin}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecciona un rol" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {isSuperAdmin && (
-                        <SelectItem value="admin">Administrador</SelectItem>
-                      )}
-                      <SelectItem value="vendor">Vendedor</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Switch 
-                    id="active"
-                    checked={formData.active}
-                    onCheckedChange={handleSwitchChange}
-                  />
-                  <Label htmlFor="active" className="text-[#5d6d7c]">Usuario activo</Label>
-                </div>
-              </div>
+      {/* Edit User Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[525px]">
+          <DialogHeader>
+            <DialogTitle>Editar Usuario</DialogTitle>
+            <DialogDescription>
+              Modifica la información del usuario.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleFormSubmit} className="space-y-4">
+            <div>
+              <Label htmlFor="username">Usuario</Label>
+              <Input
+                id="username"
+                name="username"
+                value={formData.username}
+                onChange={handleInputChange}
+                disabled
+              />
             </div>
-
+            <div>
+              <Label htmlFor="password">
+                Contraseña (dejar en blanco para no cambiar)
+              </Label>
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                value={formData.password}
+                onChange={handleInputChange}
+              />
+            </div>
+            <div>
+              <Label htmlFor="name">Nombre Completo</Label>
+              <Input
+                id="name"
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
+              />
+            </div>
+            <div>
+              <Label htmlFor="email">Correo Electrónico</Label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                value={formData.email}
+                onChange={handleInputChange}
+              />
+            </div>
+            <div>
+              <Label htmlFor="phone">Teléfono (opcional)</Label>
+              <Input
+                id="phone"
+                name="phone"
+                value={formData.phone}
+                onChange={handleInputChange}
+              />
+            </div>
+            <div>
+              <Label htmlFor="role">Rol</Label>
+              <Select
+                value={formData.role}
+                onValueChange={(value) => handleSelectChange("role", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecciona un rol" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="vendor">Vendedor</SelectItem>
+                  <SelectItem value="admin">Administrador</SelectItem>
+                  <SelectItem value="super_admin">Super Administrador</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="active"
+                checked={formData.active}
+                onCheckedChange={(checked) =>
+                  handleSwitchChange("active", checked)
+                }
+              />
+              <Label htmlFor="active">
+                Usuario activo (puede acceder al sistema)
+              </Label>
+            </div>
             <DialogFooter>
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 onClick={() => {
-                  setIsAddDialogOpen(false);
-                  setEditUser(null);
+                  resetForm();
+                  setIsEditDialogOpen(false);
                 }}
               >
                 Cancelar
               </Button>
-              <Button 
-                type="submit" 
-                className="bg-[#e3a765] hover:bg-[#e3a765]/90"
-                disabled={createUserMutation.isPending || updateUserMutation.isPending}
-              >
-                {(createUserMutation.isPending || updateUserMutation.isPending) && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Button type="submit" disabled={updateUserMutation.isPending}>
+                {updateUserMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Actualizando...
+                  </>
+                ) : (
+                  "Guardar Cambios"
                 )}
-                {editUser ? 'Guardar cambios' : 'Crear usuario'}
               </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      {/* Delete User Confirmation */}
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción {userToDelete?.active ? 'desactivará' : 'eliminará'} el usuario{' '}
-              <span className="font-medium">{userToDelete?.name}</span>.
-              {userToDelete?.active 
-                ? ' El usuario no podrá acceder al sistema, pero sus datos se mantendrán.'
-                : ' Esto eliminará permanentemente al usuario del sistema.'}
+              Esta acción no se puede deshacer. El usuario será eliminado
+              permanentemente del sistema.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setIsDeleteDialogOpen(false)}>
+              Cancelar
+            </AlertDialogCancel>
             <AlertDialogAction
-              className="bg-red-600 hover:bg-red-700"
-              onClick={() => userToDelete && deleteUserMutation.mutate(userToDelete.id)}
-              disabled={deleteUserMutation.isPending}
+              onClick={() => currentUserId && deleteUserMutation.mutate(currentUserId)}
+              className="bg-red-500 hover:bg-red-600"
             >
-              {deleteUserMutation.isPending && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              {deleteUserMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Eliminando...
+                </>
+              ) : (
+                "Eliminar"
               )}
-              {userToDelete?.active ? 'Desactivar' : 'Eliminar'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

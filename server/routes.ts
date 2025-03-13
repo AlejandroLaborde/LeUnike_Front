@@ -26,15 +26,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   } catch (error) {
     console.error("Error creating default admin user:", error);
   }
-  
+
   // Public API routes
-  
+
   // Contact form submission
   app.post("/api/contact", async (req, res, next) => {
     try {
       const contactData = insertContactMessageSchema.parse(req.body);
       const newContact = await storage.createContactMessage(contactData);
-      
+
       // If newsletter opt-in is true, also add to newsletter subscription
       if (contactData.newsletterOptIn) {
         await storage.addNewsletterSubscription({
@@ -43,13 +43,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           phone: contactData.phone
         });
       }
-      
+
       res.status(201).json(newContact);
     } catch (error) {
       next(error);
     }
   });
-  
+
   // Dashboard API routes
 
   // Users/Vendors routes
@@ -102,7 +102,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       next(error);
     }
   });
-  
+
   // Get only vendor users (for client assignment)
   app.get("/api/users/vendors", isAuthenticated, async (req, res, next) => {
     try {
@@ -171,7 +171,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const clients = isAdminUser 
         ? await storage.getAllClients()
         : await storage.getClientsByVendorId(req.user?.id || 0);
-      
+
       res.json(clients);
     } catch (error) {
       next(error);
@@ -181,7 +181,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/clients", isAuthenticated, async (req, res, next) => {
     try {
       const isAdminUser = req.user?.role === "admin" || req.user?.role === "super_admin";
-      
+
       // If user is admin/super_admin, use the vendorId from the request
       // Otherwise, set the vendorId to the current user's ID
       const clientData = insertClientSchema.parse({
@@ -190,7 +190,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ? parseInt(req.body.vendorId) 
           : req.user?.id
       });
-      
+
       const client = await storage.createClient(clientData);
       res.status(201).json(client);
     } catch (error) {
@@ -202,7 +202,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const clientId = parseInt(req.params.id);
       const isAdminUser = req.user?.role === "admin" || req.user?.role === "super_admin";
-      
+
       // Check if vendor owns this client
       if (!isAdminUser) {
         const client = await storage.getClient(clientId);
@@ -210,7 +210,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(403).json({ message: "No tienes permiso para modificar este cliente" });
         }
       }
-      
+
       // Process vendorId - only admins can change it
       const dataToUpdate = { ...req.body };
       if (isAdminUser && dataToUpdate.vendorId) {
@@ -219,7 +219,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Non-admins cannot change vendorId
         delete dataToUpdate.vendorId;
       }
-      
+
       const clientData = insertClientSchema.partial().parse(dataToUpdate);
       const updatedClient = await storage.updateClient(clientId, clientData);
       if (!updatedClient) {
@@ -236,7 +236,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const clientId = parseInt(req.params.clientId);
       const isAdminUser = req.user?.role === "admin" || req.user?.role === "super_admin";
-      
+
       // Check if vendor has access to this client's chats
       if (!isAdminUser) {
         const client = await storage.getClient(clientId);
@@ -244,7 +244,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(403).json({ message: "No tienes permiso para ver estos chats" });
         }
       }
-      
+
       const chats = await storage.getChatsByClientId(clientId);
       res.json(chats);
     } catch (error) {
@@ -256,7 +256,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const chatData = insertChatSchema.parse(req.body);
       const isAdminUser = req.user?.role === "admin" || req.user?.role === "super_admin";
-      
+
       // Check if vendor has access to send messages to this client
       if (!isAdminUser) {
         const client = await storage.getClient(chatData.clientId);
@@ -264,7 +264,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(403).json({ message: "No tienes permiso para enviar mensajes a este cliente" });
         }
       }
-      
+
       const chat = await storage.createChat(chatData);
       res.status(201).json(chat);
     } catch (error) {
@@ -276,10 +276,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/orders", isAuthenticated, async (req, res, next) => {
     try {
       const isAdminUser = req.user?.role === "admin" || req.user?.role === "super_admin";
-      const orders = isAdminUser 
+      let orders = isAdminUser 
         ? await storage.getAllOrders()
         : await storage.getOrdersByVendorId(req.user?.id || 0);
-      
+
+      // If admin, include vendor name for each order
+      if (isAdminUser && orders.length > 0) {
+        const users = await storage.getAllUsers();
+
+        // Add vendor name to each order
+        orders = orders.map(order => {
+          const vendor = users.find(user => user.id === order.vendorId);
+          return {
+            ...order,
+            vendorName: vendor ? vendor.name : null
+          };
+        });
+      }
+
       res.json(orders);
     } catch (error) {
       next(error);
@@ -293,7 +307,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...orderData,
         vendorId: req.user?.id
       });
-      
+
       // Check if vendor has access to create orders for this client
       if (req.user?.role === "vendor") {
         const client = await storage.getClient(parsedOrderData.clientId);
@@ -301,24 +315,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(403).json({ message: "No tienes permiso para crear órdenes para este cliente" });
         }
       }
-      
+
       // Verificar stock disponible para cada producto
       for (const item of items) {
         const product = await storage.getProduct(item.productId);
         if (!product) {
           return res.status(404).json({ message: `Producto con ID ${item.productId} no encontrado` });
         }
-        
+
         if (product.stock < item.quantity) {
           return res.status(400).json({ 
             message: `Stock insuficiente para ${product.name}. Disponible: ${product.stock}, Solicitado: ${item.quantity}` 
           });
         }
       }
-      
+
       // Create order with items and actualizar stock
       const order = await storage.createOrderWithItems(parsedOrderData, items);
-      
+
       // Actualizar stock de cada producto
       for (const item of items) {
         const product = await storage.getProduct(item.productId);
@@ -328,7 +342,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
       }
-      
+
       res.status(201).json(order);
     } catch (error) {
       next(error);
@@ -344,6 +358,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Pedido no encontrado" });
       }
       res.json(updatedOrder);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/register", async (req, res, next) => {
+    try {
+      const existingUser = await storage.getUserByUsername(req.body.username);
+      if (existingUser) {
+        return res.status(400).json({ message: "El nombre de usuario ya existe" });
+      }
+
+      const hashedPassword = await hashPassword(req.body.password);
+      const user = await storage.createUser({
+        ...req.body,
+        password: hashedPassword,
+        active: true,
+        role: req.body.role || "vendor", // Default to vendor if not specified
+      });
+
+      // No iniciar sesión automáticamente al registrar un usuario desde el dashboard
+      return res.status(201).json(user);
     } catch (error) {
       next(error);
     }

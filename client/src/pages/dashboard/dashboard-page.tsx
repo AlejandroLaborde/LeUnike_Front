@@ -90,19 +90,16 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  // Order data (in a real app, this would come from an API)
+  // Order data from API
   const { data: orders, isLoading } = useQuery({
     queryKey: ['/api/orders'],
     queryFn: async () => {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      return [
-        { id: "ORD-5523", client: "Martín Gómez", vendor: "Laura Méndez", amount: 8450, status: "Entregado", date: "10/10/2023" },
-        { id: "ORD-5522", client: "Carolina Sánchez", vendor: "Jorge Pérez", amount: 12300, status: "En proceso", date: "09/10/2023" },
-        { id: "ORD-5521", client: "Roberto Álvarez", vendor: "Laura Méndez", amount: 5750, status: "Entregado", date: "08/10/2023" },
-        { id: "ORD-5520", client: "Marcela Torres", vendor: "Diego Martínez", amount: 9880, status: "Pendiente", date: "08/10/2023" }
-      ];
+      const res = await apiRequest("GET", "/api/orders");
+      return (await res.json());
     },
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    staleTime: 0,
     enabled: user?.role === 'admin' || user?.role === 'super_admin'
   });
 

@@ -594,7 +594,9 @@ export default function UsersPage() {
                     <SelectContent>
                       <SelectItem value="vendor">Vendedor</SelectItem>
                       <SelectItem value="admin">Administrador</SelectItem>
-                      <SelectItem value="super_admin">Super Administrador</SelectItem>
+                      {isSuperAdmin && (
+                        <SelectItem value="super_admin">Super Administrador</SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
