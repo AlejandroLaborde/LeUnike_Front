@@ -271,11 +271,11 @@ export default function ProductsPage() {
   // Filter and sort products
   const filteredProducts = products
     .filter(product => showInactive || product.active)
-    .filter(product => 
+    .filter(product =>
       product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.description.toLowerCase().includes(searchTerm.toLowerCase())
     )
-    .filter(product => 
+    .filter(product =>
       categoryFilter === 'all' || product.category === categoryFilter
     )
     .sort((a, b) => {
@@ -391,7 +391,7 @@ export default function ProductsPage() {
         <div className="text-center py-12">
           <h3 className="text-lg font-medium text-black mb-2">No hay productos disponibles</h3>
           <p className="text-[#5d6d7c]">
-            {searchTerm || categoryFilter !== 'all' 
+            {searchTerm || categoryFilter !== 'all'
               ? "No se encontraron productos con los filtros actuales."
               : "Añade un nuevo producto para empezar."}
           </p>
@@ -399,7 +399,7 @@ export default function ProductsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredProducts.map((product) => (
-            <Card 
+            <Card
               key={product.id}
               className={`overflow-hidden ${!product.active ? 'opacity-60' : ''}`}
             >
@@ -438,7 +438,7 @@ export default function ProductsPage() {
                         <Edit className="mr-2 h-4 w-4" />
                         Editar
                       </DropdownMenuItem>
-                      <DropdownMenuItem 
+                      <DropdownMenuItem
                         onClick={() => openDeleteDialog(product.id)}
                         className="text-red-600"
                       >
@@ -455,8 +455,8 @@ export default function ProductsPage() {
                   <h3 className="font-semibold text-black">{product.name}</h3>
                   <span className={`px-2 py-1 text-xs rounded-full ${
                     product.stock > 10 ? 'bg-green-100 text-green-800' :
-                    product.stock > 0 ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-red-100 text-red-800'
+                      product.stock > 0 ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-red-100 text-red-800'
                   }`}>
                     {product.stock} unidades
                   </span>
@@ -555,10 +555,10 @@ export default function ProductsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="category">Categoría</Label>
-                  <Select 
-                    name="category" 
-                    value={formData.category} 
-                    onValueChange={(value) => setFormData({...formData, category: value})}
+                  <Select
+                    name="category"
+                    value={formData.category}
+                    onValueChange={(value) => setFormData({ ...formData, category: value })}
                   >
                     <SelectTrigger id="category">
                       <SelectValue placeholder="Selecciona" />
@@ -618,9 +618,9 @@ export default function ProductsPage() {
             </div>
 
             <DialogFooter>
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 onClick={() => {
                   setIsAddDialogOpen(false);
                   resetForm();
@@ -628,9 +628,9 @@ export default function ProductsPage() {
               >
                 Cancelar
               </Button>
-              <Button 
-                type="submit" 
-                className="bg-[#e3a765] hover:bg-[#e3a765]/90" 
+              <Button
+                type="submit"
+                className="bg-[#e3a765] hover:bg-[#e3a765]/90"
                 disabled={createMutation.isPending}
               >
                 {createMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -703,10 +703,10 @@ export default function ProductsPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="edit-category">Categoría</Label>
-                <Select 
-                  name="category" 
-                  value={formData.category} 
-                  onValueChange={(value) => setFormData({...formData, category: value})}
+                <Select
+                  name="category"
+                  value={formData.category}
+                  onValueChange={(value) => setFormData({ ...formData, category: value })}
                 >
                   <SelectTrigger id="edit-category">
                     <SelectValue placeholder="Selecciona" />
@@ -775,8 +775,8 @@ export default function ProductsPage() {
           </div>
 
           <DialogFooter>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => {
                 setIsEditDialogOpen(false);
                 setCurrentProductId(null);
@@ -785,8 +785,8 @@ export default function ProductsPage() {
             >
               Cancelar
             </Button>
-            <Button 
-              className="bg-[#e3a765] hover:bg-[#e3a765]/90" 
+            <Button
+              className="bg-[#e3a765] hover:bg-[#e3a765]/90"
               onClick={handleUpdateProduct}
               disabled={updateMutation.isPending}
             >
@@ -808,8 +808,8 @@ export default function ProductsPage() {
           </DialogHeader>
 
           <DialogFooter>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => {
                 setIsDeleteDialogOpen(false);
                 setCurrentProductId(null);
@@ -817,7 +817,7 @@ export default function ProductsPage() {
             >
               Cancelar
             </Button>
-            <Button 
+            <Button
               variant="destructive"
               onClick={handleDeleteProduct}
               disabled={deleteMutation.isPending}

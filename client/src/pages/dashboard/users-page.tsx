@@ -78,10 +78,10 @@ export default function UsersPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
+
   // Check if current user has super_admin permissions
   const isSuperAdmin = user?.role === 'super_admin';
-  
+
   // If not super_admin, show access denied
   if (!isSuperAdmin) {
     return (
@@ -100,7 +100,7 @@ export default function UsersPage() {
       </div>
     );
   }
-  
+
   // States
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<"all" | "active" | "inactive">("all");
@@ -109,7 +109,7 @@ export default function UsersPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [editUser, setEditUser] = useState<User | null>(null);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
-  
+
   // Form state
   const [formData, setFormData] = useState({
     username: "",
@@ -118,7 +118,7 @@ export default function UsersPage() {
     role: "vendor" as UserRole,
     active: true
   });
-  
+
   // Fetch users
   const { data: users, isLoading } = useQuery({
     queryKey: ['/api/users'],
@@ -127,7 +127,7 @@ export default function UsersPage() {
       return await res.json() as User[];
     }
   });
-  
+
   // Mutations
   const createUserMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
@@ -151,7 +151,7 @@ export default function UsersPage() {
       });
     }
   });
-  
+
   const updateUserMutation = useMutation({
     mutationFn: async (data: { id: number, userData: Partial<typeof formData> }) => {
       const res = await apiRequest('PUT', `/api/users/${data.id}`, data.userData);
@@ -174,7 +174,7 @@ export default function UsersPage() {
       });
     }
   });
-  
+
   const deleteUserMutation = useMutation({
     mutationFn: async (id: number) => {
       const res = await apiRequest('DELETE', `/api/users/${id}`);
@@ -197,7 +197,7 @@ export default function UsersPage() {
       });
     }
   });
-  
+
   // Handlers
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -205,21 +205,21 @@ export default function UsersPage() {
       [e.target.name]: e.target.value
     });
   };
-  
+
   const handleSwitchChange = (checked: boolean) => {
     setFormData({
       ...formData,
       active: checked
     });
   };
-  
+
   const handleSelectChange = (value: string) => {
     setFormData({
       ...formData,
       role: value as UserRole
     });
   };
-  
+
   const resetForm = () => {
     setFormData({
       username: "",
@@ -229,7 +229,7 @@ export default function UsersPage() {
       active: true
     });
   };
-  
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (editUser) {
@@ -240,13 +240,13 @@ export default function UsersPage() {
       if (formData.password) changedData.password = formData.password;
       if (formData.role !== editUser.role) changedData.role = formData.role;
       if (formData.active !== editUser.active) changedData.active = formData.active;
-      
+
       updateUserMutation.mutate({ id: editUser.id, userData: changedData });
     } else {
       createUserMutation.mutate(formData);
     }
   };
-  
+
   const openEditDialog = (user: User) => {
     setEditUser(user);
     setFormData({
@@ -257,40 +257,40 @@ export default function UsersPage() {
       active: user.active
     });
   };
-  
+
   const openDeleteDialog = (user: User) => {
     setUserToDelete(user);
     setIsDeleteDialogOpen(true);
   };
-  
+
   // Filter users
   const filteredUsers = users
     ? users
         .filter(user => {
           // Filter out current user (can't edit self)
           if (user.id === user?.id) return false;
-          
+
           // Apply search filter
           const matchesSearch = 
             user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             user.username.toLowerCase().includes(searchTerm.toLowerCase());
-          
+
           // Apply status filter
           const matchesStatus = 
             filterStatus === 'all' ? true :
             filterStatus === 'active' ? user.active :
             !user.active;
-          
+
           // Apply role filter
           const matchesRole = 
             filterRole === 'all' ? true :
             filterRole === 'admin' ? user.role === 'admin' || user.role === 'super_admin' :
             user.role === 'vendor';
-          
+
           return matchesSearch && matchesStatus && matchesRole;
         })
     : [];
-  
+
   // Helper function to get role label
   const getRoleLabel = (role: UserRole) => {
     switch(role) {
@@ -300,7 +300,7 @@ export default function UsersPage() {
       default: return role;
     }
   };
-  
+
   // Helper function to get role badge color
   const getRoleBadgeColor = (role: UserRole) => {
     switch(role) {
@@ -310,7 +310,7 @@ export default function UsersPage() {
       default: return 'bg-gray-200 text-gray-800';
     }
   };
-  
+
   // Helper function to get role icon
   const getRoleIcon = (role: UserRole) => {
     switch(role) {
@@ -320,7 +320,7 @@ export default function UsersPage() {
       default: return <User className="mr-2 h-4 w-4" />;
     }
   };
-  
+
   return (
     <div>
       {/* Header and filters */}
@@ -329,7 +329,7 @@ export default function UsersPage() {
           <h1 className="text-2xl font-bold text-black mb-1">Usuarios</h1>
           <p className="text-[#5d6d7c]">Gestiona los usuarios del sistema y sus permisos</p>
         </div>
-        
+
         <Button 
           onClick={() => {
             resetForm();
@@ -354,7 +354,7 @@ export default function UsersPage() {
               onChange={e => setSearchTerm(e.target.value)}
             />
           </div>
-          
+
           <div className="flex gap-2">
             <Select
               value={filterStatus}
@@ -369,7 +369,7 @@ export default function UsersPage() {
                 <SelectItem value="inactive">Inactivos</SelectItem>
               </SelectContent>
             </Select>
-            
+
             <Select
               value={filterRole}
               onValueChange={(value) => setFilterRole(value as typeof filterRole)}
@@ -386,7 +386,7 @@ export default function UsersPage() {
           </div>
         </div>
       </div>
-      
+
       {/* Users Table */}
       <Card>
         <CardHeader className="pb-2">
@@ -513,7 +513,7 @@ export default function UsersPage() {
                 : 'Completa los campos para crear un nuevo usuario en el sistema.'}
             </DialogDescription>
           </DialogHeader>
-          
+
           <form onSubmit={handleSubmit}>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-2 gap-4">
@@ -527,7 +527,7 @@ export default function UsersPage() {
                     required 
                   />
                 </div>
-                
+
                 <div className="col-span-2">
                   <Label htmlFor="username">Nombre de usuario</Label>
                   <Input 
@@ -538,7 +538,7 @@ export default function UsersPage() {
                     required 
                   />
                 </div>
-                
+
                 <div className="col-span-2">
                   <Label htmlFor="password">
                     {editUser ? 'Contraseña (dejar en blanco para no cambiar)' : 'Contraseña'}
@@ -552,7 +552,7 @@ export default function UsersPage() {
                     required={!editUser} 
                   />
                 </div>
-                
+
                 <div>
                   <Label htmlFor="role">Rol</Label>
                   <Select
@@ -569,7 +569,7 @@ export default function UsersPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                
+
                 <div className="flex items-center gap-2 self-end">
                   <Switch 
                     id="active" 
@@ -580,7 +580,7 @@ export default function UsersPage() {
                 </div>
               </div>
             </div>
-            
+
             <DialogFooter>
               <Button 
                 type="button" 

@@ -81,7 +81,7 @@ export default function ClientsPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
-  
+
   // State
   const [searchTerm, setSearchTerm] = useState("");
   const [editClient, setEditClient] = useState<Client | null>(null);
@@ -106,9 +106,9 @@ export default function ClientsPage() {
       return await res.json() as Client[];
     }
   });
-  
+
   // Fetch vendors (only for admin users)
-  const { data: vendors } = useQuery({
+  const { data: vendors, refetch: refetchVendors } = useQuery({
     queryKey: ['/api/users/vendors'],
     queryFn: async () => {
       const res = await apiRequest('GET', '/api/users/vendors');
@@ -218,6 +218,12 @@ export default function ClientsPage() {
     window.location.href = `/dashboard/orders?client=${clientId}`;
   };
 
+  const onCreateClientClick = () => {
+    // Refresh vendors list when opening dialog
+    refetchVendors();
+    setIsAddDialogOpen(true);
+  };
+
   // Filter clients
   const filteredClients = clients
     ? clients.filter(client => {
@@ -235,12 +241,9 @@ export default function ClientsPage() {
           <h1 className="text-2xl font-bold text-black mb-1">Clientes</h1>
           <p className="text-[#5d6d7c]">{isAdmin ? 'Gestiona todos los clientes de la empresa' : 'Gestiona tus clientes asignados'}</p>
         </div>
-        
+
         <Button 
-          onClick={() => {
-            resetForm();
-            setIsAddDialogOpen(true);
-          }}
+          onClick={onCreateClientClick}
           className="bg-[#e3a765] hover:bg-[#e3a765]/90"
         >
           <Plus className="mr-2 h-4 w-4" />
@@ -279,10 +282,7 @@ export default function ClientsPage() {
           </p>
           <Button 
             className="bg-[#e3a765] hover:bg-[#e3a765]/90"
-            onClick={() => {
-              resetForm();
-              setIsAddDialogOpen(true);
-            }}
+            onClick={onCreateClientClick}
           >
             <Plus className="mr-2 h-4 w-4" />
             Agregar Cliente
@@ -313,7 +313,7 @@ export default function ClientsPage() {
                         )}
                       </div>
                     </div>
-                    
+
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -346,7 +346,7 @@ export default function ClientsPage() {
                     </DropdownMenu>
                   </div>
                 </CardHeader>
-                
+
                 <CardContent>
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
@@ -358,7 +358,7 @@ export default function ClientsPage() {
                         {client.phone}
                       </a>
                     </div>
-                    
+
                     {client.email && (
                       <div className="flex items-center gap-2">
                         <Mail className="h-4 w-4 text-[#5d6d7c]" />
@@ -370,19 +370,19 @@ export default function ClientsPage() {
                         </a>
                       </div>
                     )}
-                    
+
                     {client.address && (
                       <div className="flex items-start gap-2">
                         <MapPin className="h-4 w-4 text-[#5d6d7c] mt-0.5" />
                         <span className="text-sm text-[#5d6d7c]">{client.address}</span>
                       </div>
                     )}
-                    
+
                     <div className="pt-2 mt-2 border-t border-gray-100 flex justify-between items-center">
                       <span className="text-xs text-[#5d6d7c]">
                         Cliente desde: {format(new Date(client.createdAt), 'dd/MM/yyyy', { locale: es })}
                       </span>
-                      
+
                       <div className="flex gap-1">
                         <Button 
                           size="sm" 
@@ -426,7 +426,7 @@ export default function ClientsPage() {
                 : 'Completa los campos para registrar un nuevo cliente.'}
             </DialogDescription>
           </DialogHeader>
-          
+
           <form onSubmit={handleSubmit}>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-1 gap-4">
@@ -441,7 +441,7 @@ export default function ClientsPage() {
                     required 
                   />
                 </div>
-                
+
                 <div>
                   <Label htmlFor="phone" className="text-[#5d6d7c]">Teléfono*</Label>
                   <Input 
@@ -453,7 +453,7 @@ export default function ClientsPage() {
                     required 
                   />
                 </div>
-                
+
                 <div>
                   <Label htmlFor="email" className="text-[#5d6d7c]">Email (opcional)</Label>
                   <Input 
@@ -465,7 +465,7 @@ export default function ClientsPage() {
                     onChange={handleInputChange} 
                   />
                 </div>
-                
+
                 <div>
                   <Label htmlFor="address" className="text-[#5d6d7c]">Dirección (opcional)</Label>
                   <Textarea 
@@ -476,7 +476,7 @@ export default function ClientsPage() {
                     onChange={handleInputChange} 
                   />
                 </div>
-                
+
                 {isAdmin && (
                   <div>
                     <Label htmlFor="vendorId" className="text-[#5d6d7c]">
@@ -512,7 +512,7 @@ export default function ClientsPage() {
                 )}
               </div>
             </div>
-            
+
             <DialogFooter>
               <Button 
                 type="button" 

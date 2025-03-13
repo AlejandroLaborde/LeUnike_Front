@@ -231,10 +231,32 @@ export default function OrdersPage() {
       const productId = value as string;
       // Also update the product reference for easy access
       const product = products?.find((p) => p.id.toString() === productId);
+      if (product) {
+        // Check if stock is available
+        const currentQuantity = newItems[index].quantity;
+        if (product.stock < currentQuantity) {
+          toast({
+            title: "Stock insuficiente",
+            description: `Solo hay ${product.stock} unidades disponibles de ${product.name}`,
+            variant: "destructive",
+          });
+          return;
+        }
+      }
       newItems[index] = { ...newItems[index], productId, product };
     } else if (field === "quantity") {
       // Ensure quantity is always a number
       const quantity = typeof value === "string" ? parseInt(value) : value;
+      const product = newItems[index].product;
+      if (product && product.stock < quantity) {
+        toast({
+          title: "Stock insuficiente",
+          description: `Solo hay ${product.stock} unidades disponibles de ${product.name}`,
+          variant: "destructive",
+        });
+        newItems[index] = { ...newItems[index], quantity: product.stock}; //set to max stock
+        return;
+      }
       newItems[index] = { ...newItems[index], quantity };
     }
 
@@ -922,8 +944,7 @@ export default function OrdersPage() {
                     Cancelado
                   </div>
                 </SelectItem>
-              </SelectContent>
-            </Select>
+              </SelectContent>            </Select>
           </div>
 
           <DialogFooter>
