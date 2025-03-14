@@ -88,6 +88,7 @@ export default function ChatsPage() {
     enabled: !!selectedClient,
   });
   
+  
   // Send message mutation
   const sendMessageMutation = useMutation({
     mutationFn: async (data: { clientId: number; message: string }) => {

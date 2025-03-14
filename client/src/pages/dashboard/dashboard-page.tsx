@@ -5,39 +5,8 @@ import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-
-// Mock QR code component
-const WhatsAppQR = () => (
-  <div className="flex flex-col items-center justify-center">
-    <div className="w-32 h-32 bg-white p-3 rounded-lg shadow-md mb-3">
-      <div className="w-full h-full bg-black grid grid-cols-7 grid-rows-7 gap-[2px]" style={{ backgroundColor: "#000" }}>
-        <div className="col-span-3 row-span-3 bg-black rounded-tl-lg border-white border-r-4 border-b-4"></div>
-        <div className="col-span-1 row-span-3"></div>
-        <div className="col-span-3 row-span-3 bg-black rounded-tr-lg border-white border-l-4 border-b-4"></div>
-        <div className="col-span-1 row-span-1"></div>
-        <div className="col-span-1 row-span-1 bg-black"></div>
-        <div className="col-span-1 row-span-1"></div>
-        <div className="col-span-1 row-span-1 bg-black"></div>
-        <div className="col-span-1 row-span-1"></div>
-        <div className="col-span-1 row-span-1 bg-black"></div>
-        <div className="col-span-1 row-span-1"></div>
-        <div className="col-span-1 row-span-1"></div>
-        <div className="col-span-1 row-span-1 bg-black"></div>
-        <div className="col-span-1 row-span-1"></div>
-        <div className="col-span-1 row-span-1 bg-black"></div>
-        <div className="col-span-3 row-span-3 bg-black rounded-bl-lg border-white border-r-4 border-t-4"></div>
-        <div className="col-span-1 row-span-3"></div>
-        <div className="col-span-3 row-span-3 bg-black border-white"></div>
-      </div>
-    </div>
-    <p className="text-sm text-[#5d6d7c]">Escanea para acceder al WhatsApp del negocio</p>
-    <p className="text-sm text-[#5d6d7c] font-medium mt-1">+54 11 5555-7890</p>
-    <Button variant="link" size="sm" className="mt-2 text-[#e3a765]">
-      <Calendar className="h-4 w-4 mr-1" />
-      Descargar QR
-    </Button>
-  </div>
-);
+import { useState, useEffect } from "react";
+import { WhatsAppQRScanner } from "@/components/whatsapp/qr-scanner";
 
 // Simple chart using divs
 const SalesChart = () => (
@@ -311,25 +280,10 @@ export default function DashboardPage() {
               <CardHeader className="pb-2">
                 <div className="flex justify-between items-center">
                   <CardTitle className="text-lg font-semibold">WhatsApp QR</CardTitle>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="text-[#5d6d7c]" 
-                    onClick={() => {
-                      toast({
-                        title: "QR actualizado",
-                        description: "El código QR ha sido actualizado correctamente",
-                      });
-                    }}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
-                    </svg>
-                  </Button>
                 </div>
               </CardHeader>
               <CardContent className="flex flex-col items-center">
-                <WhatsAppQR />
+                <WhatsAppQRScanner />
               </CardContent>
             </Card>
           </motion.div>
