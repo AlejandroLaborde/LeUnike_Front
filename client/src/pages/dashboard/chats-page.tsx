@@ -1,18 +1,18 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { useAuth } from "@/hooks/use-auth";
-import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "../../hooks/use-auth";
+import { useToast } from "../../hooks/use-toast";
 import { 
   Card, 
   CardContent, 
   CardHeader, 
   CardTitle 
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+} from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
+import { Textarea } from "../../components/ui/textarea";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest } from "../../lib/queryClient";
 import { 
   Loader2, 
   MessageSquare,
@@ -22,12 +22,14 @@ import {
   Phone,
   ArrowLeft
 } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "../../components/ui/avatar";
+import { ScrollArea } from "../../components/ui/scroll-area";
+import { Badge } from "../../components/ui/badge";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useLocation } from "wouter";
+
+import { Switch } from "../../components/ui/switch"; // Importamos el switch
 
 type Client = {
   id: number;
@@ -46,25 +48,24 @@ type Chat = {
 };
 
 export default function ChatsPage() {
+  // Estado para controlar si el bot está activado para el cliente seleccionado
+  const [isBotEnabled, setIsBotEnabled] = useState(true); // Por defecto activado
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [location] = useLocation();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
-  
-  // Extract client ID from URL if present
+
   const searchParams = new URLSearchParams(location.split('?')[1]);
   const initialClientId = searchParams.get('client') 
     ? parseInt(searchParams.get('client') as string) 
     : null;
-  
-  // State
+
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [message, setMessage] = useState("");
   const [showClientList, setShowClientList] = useState(!initialClientId);
-  
-  // Fetch clients
+
   const { data: clients, isLoading: isLoadingClients } = useQuery({
     queryKey: ['/api/clients'],
     queryFn: async () => {
@@ -73,65 +74,96 @@ export default function ChatsPage() {
     }
   });
   
-  // Fetch chat messages for selected client
-  const { 
-    data: chats, 
-    isLoading: isLoadingChats,
-    refetch: refetchChats
-  } = useQuery({
-    queryKey: ['/api/chats', selectedClient?.id],
+  // Función para cambiar el estado del bot
+  const toggleBot = async () => {
+    if (!selectedClient) return;
+
+    const newStatus = !isBotEnabled;
+    setIsBotEnabled(newStatus);
+
+    try {
+      const response = await fetch(`http://localhost:3000/api/bot-users/${selectedClient.phone}/toggle`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ enableBot: newStatus }),
+      });
+
+      if (!response.ok) {
+        throw new Error("No se pudo actualizar el estado del bot");
+      }
+    } catch (error) {
+      console.error("Error al actualizar el estado del bot:", error);
+      setIsBotEnabled(!newStatus); // Revertir cambio si falla
+    }
+  };
+
+  const { data: chats, isLoading: isLoadingChats, refetch: refetchChats } = useQuery({
+    queryKey: ["/api/messages/conversation", selectedClient?.phone],
     queryFn: async () => {
       if (!selectedClient) return [];
-      const res = await apiRequest('GET', `/api/chats/${selectedClient.id}`);
-      return await res.json() as Chat[];
+      const res = await fetch(`http://localhost:3000/api/messages/conversation/${selectedClient.phone}`);
+      if (!res.ok) throw new Error(`Error al obtener mensajes: ${res.statusText}`);
+      const data = await res.json();
+      return data.messages;
     },
     enabled: !!selectedClient,
   });
-  
-  
-  // Send message mutation
+
+  useEffect(() => {
+    if (!selectedClient) return;
+    const interval = setInterval(() => {
+      refetchChats();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [selectedClient, refetchChats]);
+
   const sendMessageMutation = useMutation({
     mutationFn: async (data: { clientId: number; message: string }) => {
-      const res = await apiRequest('POST', '/api/chats', {
-        clientId: data.clientId,
-        message: data.message,
-        fromClient: false
+      if (!selectedClient) return;
+      const senderPhone = "5491158100725";
+      const receiverPhone = selectedClient.phone;
+      if (!receiverPhone) {
+        throw new Error("El cliente no tiene un número de teléfono asignado.");
+      }
+      const payload = {
+        from: senderPhone,
+        to: receiverPhone,
+        body: data.message,
+        type: "text",
+        deviceType: "mobile"
+      };
+      const res = await fetch("http://localhost:3000/api/send", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        body: JSON.stringify(payload)
       });
+      if (!res.ok) {
+        const errorMessage = `Error en la API (${res.status}): ${await res.text()}`;
+        throw new Error(errorMessage);
+      }
       return await res.json();
     },
     onSuccess: () => {
       setMessage("");
-      queryClient.invalidateQueries({ queryKey: ['/api/chats', selectedClient?.id] });
+      queryClient.invalidateQueries({ queryKey: ["/api/messages/conversation", selectedClient?.phone] });
       setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
       }, 100);
     },
     onError: (error) => {
       toast({
         title: "Error al enviar el mensaje",
-        description: error.message,
+        description: error instanceof Error ? error.message : "Error desconocido",
         variant: "destructive",
       });
     }
   });
-  
-  // Find initial client
-  useEffect(() => {
-    if (clients && initialClientId) {
-      const client = clients.find(c => c.id === initialClientId);
-      if (client) {
-        setSelectedClient(client);
-        setShowClientList(false);
-      }
-    }
-  }, [clients, initialClientId]);
-  
-  // Scroll to bottom of messages when chats change
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chats]);
-  
-  // Handlers
+
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedClient || !message.trim()) return;
@@ -142,9 +174,17 @@ export default function ChatsPage() {
     });
   };
   
-  const handleSelectClient = (client: Client) => {
-    setSelectedClient(client);
-    setShowClientList(false);
+  const formatMessageTime = (timestamp: string) => {
+    if (!timestamp) return "Fecha no disponible"; // Manejo de errores
+  
+    const date = new Date(timestamp);
+    
+    if (isNaN(date.getTime())) {
+      console.error("Invalid timestamp:", timestamp);
+      return "Fecha inválida";
+    }
+  
+    return format(date, "HH:mm", { locale: es });
   };
   
   const handleBackToClientList = () => {
@@ -152,13 +192,12 @@ export default function ChatsPage() {
     setSelectedClient(null);
   };
   
-  // Function to format message time
-  const formatMessageTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return format(date, 'HH:mm', { locale: es });
+  const handleSelectClient = (client: Client) => {
+    setSelectedClient(client);
+    setShowClientList(false);
   };
   
-  // Get client initials for avatar
+    // Función para obtener las iniciales del nombre del cliente
   const getInitials = (name: string) => {
     return name
       .split(' ')
@@ -167,7 +206,7 @@ export default function ChatsPage() {
       .toUpperCase()
       .substring(0, 2);
   };
-  
+
   return (
     <div className="h-[calc(100vh-8rem)]">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 space-y-4 md:space-y-0">
@@ -309,6 +348,10 @@ export default function ChatsPage() {
                         >
                           <Phone className="h-3 w-3 mr-1" /> {selectedClient.phone}
                         </a>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-sm text-gray-600">Bot activado:</span>
+                          <Switch checked={isBotEnabled} onCheckedChange={toggleBot} />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -332,32 +375,37 @@ export default function ChatsPage() {
                 ) : (
                   <ScrollArea className="h-[calc(100vh-22rem)]">
                     <div className="space-y-4">
-                      {chats.map((chat, index) => (
-                        <div 
-                          key={chat.id}
-                          className={`flex ${chat.fromClient ? 'justify-start' : 'justify-end'}`}
-                        >
+                      {chats.map((chat, index) => {
+                        const isMyMessage = chat.from=='5491171657922'; // Ajusta según cómo identificas los mensajes enviados
+
+                        return (
                           <div 
-                            className={`max-w-[80%] rounded-lg p-3 ${
-                              chat.fromClient 
-                                ? 'bg-gray-100 text-black' 
-                                : 'bg-[#e3a765] text-white'
-                            }`}
+                            key={chat.id}
+                            className={`flex ${isMyMessage ? 'justify-end' : 'justify-start'}`}
                           >
-                            <p className="text-sm">{chat.message}</p>
-                            <p className={`text-xs mt-1 text-right ${
-                              chat.fromClient ? 'text-gray-500' : 'text-white/80'
-                            }`}>
-                              {formatMessageTime(chat.createdAt)}
-                            </p>
+                            <div 
+                              className={`max-w-[80%] rounded-lg p-3 ${
+                                isMyMessage 
+                                  ? 'bg-[#e3a765] text-white' // Mensajes enviados (derecha)
+                                  : 'bg-gray-100 text-black' // Mensajes recibidos (izquierda)
+                              }`}
+                            >
+                              <p className="text-sm">{chat.body}</p>
+                              <p className={`text-xs mt-1 text-right ${
+                                isMyMessage ? 'text-white/80' : 'text-gray-500'
+                              }`}>
+                                {formatMessageTime(chat.timestamp)}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                       <div ref={messagesEndRef} />
                     </div>
                   </ScrollArea>
                 )}
               </CardContent>
+
               
               {/* Message Input */}
               <div className="p-4 border-t">
