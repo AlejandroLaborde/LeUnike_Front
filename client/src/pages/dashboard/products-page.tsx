@@ -33,7 +33,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Loader2, Search, Plus, MoreVertical, Edit, Trash, Filter, ArrowUpDown, PlusCircle, List, Grid, Package } from "lucide-react";
+import { Loader2, Search, Plus, MoreVertical, Edit, Trash, Filter, ArrowUpDown, PlusCircle, List, Grid, Package, Settings } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -42,6 +42,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { formatCurrency } from "@/lib/utils";
 import { SkeletonCards } from "@/components/skeleton-cards";
 import { DashboardTitle } from "@/components/dashboard/title";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
 
 // Definir la interfaz para un producto
@@ -78,6 +79,8 @@ export default function ProductsPage() {
   });
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [minStockThreshold, setMinStockThreshold] = useState(5);
+  const [showDisabled, setShowDisabled] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -200,12 +203,22 @@ export default function ProductsPage() {
   });
 
   const filteredProducts = products?.filter((product) => {
-    if (!searchTerm) return true;
-    return (
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.category?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    // Si showDisabled está activo, mostrar todos los productos
+    // Si no, mostrar solo los activos
+    if (!showDisabled && !product.active) {
+      return false;
+    }
+
+    // Aplicar filtro de búsqueda si existe
+    if (searchTerm) {
+      return (
+        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (product.description || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (product.category || '').toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    return true;
   });
 
   const resetForm = () => {
@@ -300,14 +313,51 @@ export default function ProductsPage() {
           <CardHeader className="flex flex-row items-center space-y-0">
             <CardTitle className="text-xl">Catálogo de productos</CardTitle>
             <div className="ml-auto flex space-x-2">
-              <Button
-                variant="default"
-                onClick={() => setIsAddDialogOpen(true)}
-                className="bg-[#e3a765] hover:bg-[#e3a765]/90 text-white ml-auto flex items-center"
-              >
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Nuevo Producto
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="default"
+                  onClick={() => setIsAddDialogOpen(true)}
+                  className="bg-[#e3a765] hover:bg-[#e3a765]/90 text-white ml-auto flex items-center"
+                >
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Nuevo Producto
+                </Button>
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <Button variant="outline" size="icon">
+                      <Settings className="h-4 w-4" />
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent>
+                    <SheetHeader>
+                      <SheetTitle>Configuración de Productos</SheetTitle>
+                    </SheetHeader>
+                    <div className="space-y-6">
+                      <div>
+                        <Label htmlFor="minStock">Alerta de Stock Mínimo</Label>
+                        <div className="flex items-center gap-2 mt-2">
+                          <Input
+                            id="minStock"
+                            type="number"
+                            value={minStockThreshold}
+                            onChange={(e) => setMinStockThreshold(parseInt(e.target.value) || 0)}
+                            min="0"
+                          />
+                          <span className="text-sm text-gray-500">unidades</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="showDisabled">Mostrar productos deshabilitados</Label>
+                        <Switch
+                          id="showDisabled"
+                          checked={showDisabled}
+                          onCheckedChange={setShowDisabled}
+                        />
+                      </div>
+                    </div>
+                  </SheetContent>
+                </Sheet>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
@@ -343,7 +393,7 @@ export default function ProductsPage() {
                 {filteredProducts?.map((product) => (
                   <motion.div
                     key={product.id}
-                    className="bg-white rounded-lg border shadow-sm overflow-hidden hover:shadow-md transition-shadow"
+                    className={`bg-white rounded-lg border shadow-sm overflow-hidden hover:shadow-md transition-shadow ${!product.active ? 'opacity-50 grayscale' : ''}`}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.3 }}
@@ -360,7 +410,7 @@ export default function ProductsPage() {
                           <Package className="h-12 w-12" />
                         </div>
                       )}
-                      {product.stock <= 5 && (
+                      {product.stock <= minStockThreshold && (
                         <div className="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">
                           ¡Poco stock!
                         </div>
@@ -425,7 +475,7 @@ export default function ProductsPage() {
                         key={product.id}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        transition={{ duration: 0.3 }}
+                        style={{ opacity: product.active ? 1 : 0.5 }}
                         className="border-b transition-colors hover:bg-muted/50"
                       >
                         <TableCell className="font-medium">
@@ -448,10 +498,10 @@ export default function ProductsPage() {
                         <TableCell>{product.category || "-"}</TableCell>
                         <TableCell>
                           <div className="flex items-center">
-                            <span className={product.stock <= 5 ? "text-red-500 font-medium" : ""}>
+                            <span className={product.stock <= minStockThreshold ? "text-red-500 font-medium" : ""}>
                               {product.stock}
                             </span>
-                            {product.stock <= 5 && (
+                            {product.stock <= minStockThreshold && (
                               <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
                                 ¡Poco stock!
                               </span>

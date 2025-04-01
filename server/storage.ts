@@ -461,7 +461,7 @@ export class MemStorage implements IStorage {
   }
 
   async getAllProducts(): Promise<Product[]> {
-    return Array.from(this.productsMap.values()).filter(product => product.active);
+    return Array.from(this.productsMap.values());
   }
 
   async createProduct(product: InsertProduct): Promise<Product> {
@@ -491,6 +491,14 @@ export class MemStorage implements IStorage {
     this.productsMap.set(id, updatedProduct);
     this.saveDataToFile(); // Save changes
     return updatedProduct;
+  }
+
+  async deleteProduct(id: number): Promise<boolean> {
+    const deleted = this.productsMap.delete(id);
+    if (deleted) {
+      this.saveDataToFile();
+    }
+    return deleted;
   }
 
   // Client methods

@@ -152,12 +152,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/products/:id", isAuthenticated, isAdmin, async (req, res, next) => {
     try {
       const productId = parseInt(req.params.id);
-      // Set product as inactive instead of deleting
-      const deactivated = await storage.updateProduct(productId, { active: false });
-      if (!deactivated) {
+      const product = await storage.getProduct(productId);
+      if (!product) {
         return res.status(404).json({ message: "Producto no encontrado" });
       }
-      res.json({ message: "Producto desactivado correctamente" });
+      if (product.active) {
+        return res.status(400).json({ message: "No se puede eliminar un producto activo" });
+      }
+      const deleted = await storage.deleteProduct(productId);
+      if (!deleted) {
+        return res.status(500).json({ message: "Error al eliminar el producto" });
+      }
+      res.json({ message: "Producto eliminado correctamente" });
     } catch (error) {
       next(error);
     }

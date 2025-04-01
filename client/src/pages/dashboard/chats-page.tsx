@@ -8,9 +8,19 @@ import {
   CardHeader, 
   CardTitle 
 } from "../../components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle 
+} from "../../components/ui/dialog";
+import { Label } from "../../components/ui/label";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Textarea } from "../../components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "../../lib/queryClient";
 import { 
@@ -20,7 +30,8 @@ import {
   User,
   ChevronRight,
   Phone,
-  ArrowLeft
+  ArrowLeft,
+  Trash
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "../../components/ui/avatar";
 import { ScrollArea } from "../../components/ui/scroll-area";
@@ -28,6 +39,24 @@ import { Badge } from "../../components/ui/badge";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useLocation } from "wouter";
+import { Plus, ShoppingCart } from "lucide-react";
+
+type Product = {
+  id: number;
+  name: string;
+  price: number;
+  unitSize: string;
+  category: string;
+  stock: number;
+};
+
+type OrderItem = {
+  productId: string;
+  quantity: number;
+  product?: Product;
+};
+
+type OrderStatus = "pending" | "processing" | "delivered" | "canceled";
 
 import { Switch } from "../../components/ui/switch"; // Importamos el switch
 
@@ -50,6 +79,8 @@ type Chat = {
 export default function ChatsPage() {
   // Estado para controlar si el bot está activado para el cliente seleccionado
   const [isBotEnabled, setIsBotEnabled] = useState(true); // Por defecto activado
+  const [isNewOrderOpen, setIsNewOrderOpen] = useState(false);
+  const [orderItems, setOrderItems] = useState<OrderItem[]>([{ productId: "", quantity: 1 }]);
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -72,6 +103,57 @@ export default function ChatsPage() {
       const res = await apiRequest('GET', '/api/clients');
       return await res.json() as Client[];
     }
+  });
+
+  const { data: products } = useQuery({
+    queryKey: ['/api/products'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/products');
+      return await res.json() as Product[];
+    }
+  });
+
+  const createOrderMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedClient || orderItems.some((item) => !item.productId || item.quantity < 1)) {
+        throw new Error("Por favor completa todos los campos obligatorios");
+      }
+
+      const { total } = calculateTotal();
+
+      const orderData = {
+        clientId: selectedClient.id,
+        vendorId: user?.id,
+        status: "pending" as OrderStatus,
+        totalAmount: total,
+        items: orderItems.map((item) => ({
+          productId: parseInt(item.productId),
+          quantity: item.quantity,
+          unitPrice: products?.find((p) => p.id.toString() === item.productId)?.price || 0,
+        })),
+      };
+
+      const res = await apiRequest("POST", "/api/orders", orderData);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+      setIsNewOrderOpen(false);
+      setOrderItems([{ productId: "", quantity: 1 }]);
+      toast({
+        title: "Pedido creado",
+        description: "El pedido ha sido creado correctamente",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error al crear el pedido",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
   
   // Función para cambiar el estado del bot
@@ -109,6 +191,9 @@ export default function ChatsPage() {
       return data.messages;
     },
     enabled: !!selectedClient,
+    refetchInterval: 3000,
+    refetchOnWindowFocus: true,
+    staleTime: 0
   });
 
   useEffect(() => {
@@ -191,6 +276,82 @@ export default function ChatsPage() {
     setShowClientList(true);
     setSelectedClient(null);
   };
+
+  const addProductToOrder = () => {
+    setOrderItems([...orderItems, { productId: "", quantity: 1 }]);
+  };
+
+  const removeProductFromOrder = (index: number) => {
+    if (orderItems.length === 1) {
+      setOrderItems([{ productId: "", quantity: 1 }]);
+      return;
+    }
+    const newItems = [...orderItems];
+    newItems.splice(index, 1);
+    setOrderItems(newItems);
+  };
+
+  const updateOrderItem = (
+    index: number,
+    field: "productId" | "quantity",
+    value: string | number,
+  ) => {
+    const newItems = [...orderItems];
+
+    if (field === "productId") {
+      const productId = value as string;
+      const product = products?.find((p) => p.id.toString() === productId);
+      if (product) {
+        const currentQuantity = newItems[index].quantity;
+        if (product.stock < currentQuantity) {
+          toast({
+            title: "Stock insuficiente",
+            description: `Solo hay ${product.stock} unidades disponibles de ${product.name}`,
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+      newItems[index] = { ...newItems[index], productId, product };
+    } else if (field === "quantity") {
+      const quantity = typeof value === "string" ? parseInt(value) : value;
+      const product = newItems[index].product;
+      if (product && product.stock < quantity) {
+        toast({
+          title: "Stock insuficiente",
+          description: `Solo hay ${product.stock} unidades disponibles de ${product.name}`,
+          variant: "destructive",
+        });
+        newItems[index] = { ...newItems[index], quantity: product.stock}; 
+        return;
+      }
+      newItems[index] = { ...newItems[index], quantity };
+    }
+
+    setOrderItems(newItems);
+  };
+
+  const calculateTotal = () => {
+    if (!products) return { subtotal: 0, iva: 0, total: 0 };
+
+    const subtotal = orderItems.reduce((sum, item) => {
+      if (!item.productId) return sum;
+      const product = products.find((p) => p.id.toString() === item.productId);
+      return sum + (product ? product.price * item.quantity : 0);
+    }, 0);
+
+    const iva = subtotal * 0.21;
+    const total = subtotal + iva;
+
+    return { subtotal, iva, total };
+  };
+
+  const formatCurrency = (amount: number | undefined) => {
+    return amount?.toLocaleString("es-AR", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }) || "0.00";
+  };
   
   const handleSelectClient = (client: Client) => {
     setSelectedClient(client);
@@ -208,7 +369,7 @@ export default function ChatsPage() {
   };
 
   return (
-    <div className="h-[calc(100vh-8rem)]">
+    <div className="h-screen">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 space-y-4 md:space-y-0">
         <div>
           <h1 className="text-2xl font-bold text-black mb-1">Chats</h1>
@@ -231,7 +392,7 @@ export default function ChatsPage() {
         )}
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-[calc(100%-4rem)]">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-[calc(100vh-8rem)]">
         {/* Client List (Hidden on mobile when a chat is selected) */}
         {(showClientList || !selectedClient) && (
           <motion.div 
@@ -321,42 +482,200 @@ export default function ChatsPage() {
               {/* Chat Header */}
               <CardHeader className="pb-2 border-b">
                 <div className="flex justify-between items-center">
-                  <div className="flex items-center">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="md:hidden mr-2"
-                      onClick={handleBackToClientList}
-                    >
-                      <ArrowLeft className="h-5 w-5" />
-                    </Button>
-                    <Avatar className="h-9 w-9 mr-3">
-                      <AvatarFallback className="bg-[#e3a765]/20 text-[#e3a765]">
-                        {getInitials(selectedClient.name)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <CardTitle className="text-lg">{selectedClient.name}</CardTitle>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge variant="outline" className="text-xs font-normal bg-green-100 text-green-800 border-0">
-                          <span className="h-2 w-2 rounded-full bg-green-500 mr-1"></span>
-                          En línea
-                        </Badge>
-                        <a 
-                          href={`tel:${selectedClient.phone}`}
-                          className="text-xs text-[#5d6d7c] hover:text-[#e3a765] flex items-center"
+                  <div className="flex items-center justify-between w-full">
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center flex-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="md:hidden mr-2"
+                          onClick={handleBackToClientList}
                         >
-                          <Phone className="h-3 w-3 mr-1" /> {selectedClient.phone}
-                        </a>
-                        <div className="flex items-center space-x-2">
-                          <span className="text-sm text-gray-600">Bot activado:</span>
-                          <Switch checked={isBotEnabled} onCheckedChange={toggleBot} />
+                          <ArrowLeft className="h-5 w-5" />
+                        </Button>
+                        <Avatar className="h-9 w-9 mr-3">
+                          <AvatarFallback className="bg-[#e3a765]/20 text-[#e3a765]">
+                            {getInitials(selectedClient.name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <CardTitle className="text-lg">{selectedClient.name}</CardTitle>
+                          <div className="flex flex-wrap items-center gap-2 mt-1">
+                            <Badge variant="outline" className="text-xs font-normal bg-green-100 text-green-800 border-0">
+                              <span className="h-2 w-2 rounded-full bg-green-500 mr-1"></span>
+                              En línea
+                            </Badge>
+                            <a 
+                              href={`tel:${selectedClient.phone}`}
+                              className="text-xs text-[#5d6d7c] hover:text-[#e3a765] flex items-center"
+                            >
+                              <Phone className="h-3 w-3 mr-1" /> {selectedClient.phone}
+                            </a>
+                            <div className="flex items-center space-x-2">
+                              <span className="text-sm text-gray-600">Bot activado:</span>
+                              <Switch checked={isBotEnabled} onCheckedChange={toggleBot} />
+                            </div>
+                          </div>
                         </div>
+                      </div>
+                      <Button
+                        onClick={() => setIsNewOrderOpen(true)}
+                        className="bg-[#e3a765] hover:bg-[#e3a765]/90 shrink-0 ml-4"
+                      >
+                        <ShoppingCart className="mr-2 h-4 w-4" />
+                        <span className="hidden sm:inline">Crear Pedido</span>
+                      </Button>
+                    </div>
+                </div>
+                </div>
+              </CardHeader>
+
+              {/* New Order Dialog */}
+              <Dialog
+                open={isNewOrderOpen}
+                onOpenChange={(open) => {
+                  if (!open) {
+                    setIsNewOrderOpen(false);
+                    setOrderItems([{ productId: "", quantity: 1 }]);
+                  }
+                }}
+              >
+                <DialogContent className="sm:max-w-[600px]">
+                  <DialogHeader>
+                    <DialogTitle>Nuevo Pedido</DialogTitle>
+                    <DialogDescription>
+                      Crear un nuevo pedido para {selectedClient?.name}
+                    </DialogDescription>
+                  </DialogHeader>
+
+                  <div className="py-4 space-y-4">
+                    {/* Products selection */}
+                    <div>
+                      <Label className="text-[#5d6d7c] block mb-2">Productos*</Label>
+                      <Card>
+                        <CardContent className="p-4">
+                          <div className="space-y-3">
+                            {orderItems.map((item, index) => (
+                              <div key={index} className="flex items-end gap-2">
+                                <div className="flex-1">
+                                  <Label
+                                    htmlFor={`product-${index}`}
+                                    className="text-xs text-[#5d6d7c]"
+                                  >
+                                    Producto
+                                  </Label>
+                                  <Select
+                                    value={item.productId}
+                                    onValueChange={(value) =>
+                                      updateOrderItem(index, "productId", value)
+                                    }
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Selecciona un producto" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {products?.map((product) => (
+                                        <SelectItem
+                                          key={product.id}
+                                          value={product.id.toString()}
+                                        >
+                                          {product.name} - ${product.price} ({product.unitSize}) - Stock: {product.stock}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div className="w-20">
+                                  <Label
+                                    htmlFor={`quantity-${index}`}
+                                    className="text-xs text-[#5d6d7c]"
+                                  >
+                                    Cantidad
+                                  </Label>
+                                  <Input
+                                    id={`quantity-${index}`}
+                                    type="number"
+                                    min="1"
+                                    max={item.product?.stock || 999}
+                                    value={item.quantity}
+                                    onChange={(e) =>
+                                      updateOrderItem(
+                                        index,
+                                        "quantity",
+                                        parseInt(e.target.value) || 1,
+                                      )
+                                    }
+                                  />
+                                </div>
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  className="shrink-0"
+                                  onClick={() => removeProductFromOrder(index)}
+                                >
+                                  <Trash className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="mt-3 w-full"
+                            onClick={addProductToOrder}
+                          >
+                            <Plus className="mr-1 h-4 w-4" />
+                            Agregar otro producto
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    </div>
+
+                    {/* Order summary */}
+                    <div>
+                      <h3 className="text-sm font-medium text-[#5d6d7c] mb-2">Resumen</h3>
+                      <div className="bg-gray-50 rounded-md p-4">
+                        {(() => {
+                          const { subtotal, iva, total } = calculateTotal();
+                          return (
+                            <>
+                              <div className="flex justify-between">
+                                <span className="text-sm text-[#5d6d7c]">Subtotal:</span>
+                                <span className="font-medium">${formatCurrency(subtotal)}</span>
+                              </div>
+                              <div className="flex justify-between mt-1">
+                                <span className="text-sm text-[#5d6d7c]">IVA (21%):</span>
+                                <span className="font-medium">${formatCurrency(iva)}</span>
+                              </div>
+                              <div className="flex justify-between mt-2 pt-2 border-t">
+                                <span className="font-medium">Total:</span>
+                                <span className="font-bold text-[#e3a765]">${formatCurrency(total)}</span>
+                              </div>
+                            </>
+                          );
+                        })()}
                       </div>
                     </div>
                   </div>
-                </div>
-              </CardHeader>
+
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsNewOrderOpen(false)}>
+                      Cancelar
+                    </Button>
+                    <Button
+                      className="bg-[#e3a765] hover:bg-[#e3a765]/90"
+                      onClick={() => createOrderMutation.mutate()}
+                      disabled={createOrderMutation.isPending}
+                    >
+                      {createOrderMutation.isPending && (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      )}
+                      Crear Pedido
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
               
               {/* Messages Area */}
               <CardContent className="p-4 overflow-auto flex-grow">
